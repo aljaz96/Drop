@@ -122,6 +122,8 @@ public class Drop extends ApplicationAdapter {
 		}
 	}
 
+	//dodaj spreminjajoče kante/inventory/nove smeti/ mogoče drevesa/mogoče ozadaje poštimati
+
 	@Override
 	public void render () {
 		Gdx.gl.glClearColor(0, 0, 0.2f, 1);
