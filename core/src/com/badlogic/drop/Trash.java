@@ -17,7 +17,11 @@ public class Trash{
 
     Rectangle smet;
 
-    Trash(int x, int y, String n, int w, int v, String i ,TrashType t){
+    Trash create_clone(){
+        return new Trash(width,height,name,weight,value,img,type);
+    };
+
+    Trash(int x, int y, String n, int v, int w, String i ,TrashType t){
         width = x;
         height = y;
         name = n;
@@ -25,6 +29,17 @@ public class Trash{
         value = v;
         img = i;
         type = t;
+    }
+
+    Trash(int x, int y, String n, int v, int w, String i ,TrashType t, Rectangle r){
+        width = x;
+        height = y;
+        name = n;
+        weight = w;
+        value = v;
+        img = i;
+        type = t;
+        smet = r;
     }
 
     public int getWidth() {

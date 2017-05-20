@@ -26,7 +26,9 @@ import com.badlogic.gdx.utils.TimeUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import java.security.SecureRandom;
 import java.util.Iterator;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 public class Drop extends ApplicationAdapter {
@@ -39,6 +41,10 @@ public class Drop extends ApplicationAdapter {
     private Texture yellowBin;
 	private Texture tree;
 	private Sound dropSound;
+	private Sound paperSound;
+	private Sound metalSound;
+	private Sound plasticSound;
+	private Sound glassSound;
 	private Music rainMusic;
 	private OrthographicCamera camera;
 	private SpriteBatch batch;
@@ -57,8 +63,9 @@ public class Drop extends ApplicationAdapter {
 	private Array<Trash> Inventory;
 	private int inventorySize = 10;
 	private int currentInventory = 0;
+	private int score = 0;
 
-	private long lastDropTime;
+	//private long lastDropTime;
 
     ////////// MOJE
     private Viewport viewport;
@@ -67,7 +74,13 @@ public class Drop extends ApplicationAdapter {
     private int advance;
 	private int numberOfTrash;
 	private BitmapFont font;
+	private BitmapFont inventoryFont;
+	private BitmapFont scoreFont;
+	private BitmapFont timerFont;
 	private String litterText;
+	private String inventoryText;
+	private String scoreText;
+	private String timerText;
 	private Touchpad touchpad;
 	private Skin touchpadSkin;
 	private Touchpad.TouchpadStyle touchpadStyle;
@@ -78,16 +91,22 @@ public class Drop extends ApplicationAdapter {
     private Sprite player;
 	float oldX;
 	float oldY;
+	boolean zvok;
     private Animation<TextureRegion> walkAnimation;
     private Texture[] walkSheet;
+	Random rand;
     /////////
 	
 	@Override
 	public void create () {
-		// load the images for the droplet and the bucket, 64x64 pixels each
+		rand = new Random();
 		font = new BitmapFont();
+		inventoryFont = new BitmapFont();
+		scoreFont = new BitmapFont();
+		timerFont = new BitmapFont();
+
         background = new Texture(Gdx.files.internal("background2.png"));
-		trashImage = new Texture(Gdx.files.internal("can.png"));
+		//trashImage = new Texture(Gdx.files.internal("t1.png"));
 		bucketImage = new Texture(Gdx.files.internal("Hat_man1.png"));
         blueBin = new Texture(Gdx.files.internal("blueBin.png"));
         redBin = new Texture(Gdx.files.internal("redBin.png"));
@@ -95,11 +114,13 @@ public class Drop extends ApplicationAdapter {
         yellowBin = new Texture(Gdx.files.internal("orangeBin.png"));
 		tree = new Texture(Gdx.files.internal("tree.png"));
 
-
-
-                // load the drop sound effect and the rain background "music"
+		// load the sound effects and the rain background "music"
 		dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
 		rainMusic = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
+		paperSound = Gdx.audio.newSound(Gdx.files.internal("papir.mp3"));
+		glassSound = Gdx.audio.newSound(Gdx.files.internal("steklo.mp3"));
+		metalSound = Gdx.audio.newSound(Gdx.files.internal("kovina.mp3"));
+		plasticSound = Gdx.audio.newSound(Gdx.files.internal("plastika.mp3"));
 
 		// start the playback of the background music immediately
 		rainMusic.setLooping(true);
@@ -111,22 +132,23 @@ public class Drop extends ApplicationAdapter {
 		batch = new SpriteBatch();
 
 		bucket = new Rectangle();
-		bucket.x = 800 / 2 - 64 / 2;
-		bucket.y = 20;
+		bucket.x = 160;
+		bucket.y = 160;
 		bucket.width = 64;
 		bucket.height = 90;
-
-		//DREVESA
-		narediDrevesa();
 
 		//////////// MOJE
 		speed = 8;
         timer = 1000000000;
         counter = 0;
-        advance = 10;
-		numberOfTrash = 10;
-		litterText = "Litter left: ";
+        //advance = 10;
+		//ŠTEVILO ODPADKOV
+		numberOfTrash = 20;
+		//////////////////
 		font.getData().setScale(1.5f,1.5f);
+		inventoryFont.getData().setScale(1.5f, 1.5f);
+		scoreFont.getData().setScale(1.5f, 1.5f);
+		timerFont.getData().setScale(1.2f, 1.2f);
 		camera.viewportWidth = 1200;
 		camera.viewportHeight = 700;
 		//float aspectRation = (float) Gdx.graphics.getWidth() / (float) Gdx.graphics.getHeight();
@@ -142,6 +164,8 @@ public class Drop extends ApplicationAdapter {
 		for(int i=0; i<numberOfTrash; i++){
 			spawnTrash();
 		}
+		//DREVESA
+		narediDrevesa();
 	}
 
 	//dodaj spreminjajoče kante/inventory/nove smeti/ mogoče drevesa/mogoče ozadaje poštimati
@@ -153,9 +177,11 @@ public class Drop extends ApplicationAdapter {
 		Gdx.gl.glClearColor(0, 0, 0.2f, 1);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // ... more to come here ...
 		//litterText = "Litter left: " + numberOfTrash;
-		litterText = "Litter left: " + currentInventory;
+		litterText = "Litter left: " + numberOfTrash;
+		inventoryText = "Inventory space: " + currentInventory + "/" + inventorySize;
+		scoreText = "Score: " + score;
+		if(currentInventory == inventorySize){ inventoryText = "Inventory space: FULL"; }
 		camera.position.x = bucket.getX() + 64 / 2;
 		camera.position.y = bucket.getY() + 90 / 2;
 		if(camera.position.x < 605){ camera.position.x = 605;}
@@ -171,8 +197,9 @@ public class Drop extends ApplicationAdapter {
 
 		batch.begin();
 		//ZAČETEK RISANJA NA ZASLON
-        batch.draw(background,0,0);
+        batch.draw(background,0,0);  //OZADJE
         int counter = 0;
+		//KOŠI ZA SMETI
         for(Rectangle bin: bins){
             if(counter == 0)
                 batch.draw(blueBin, bin.x, bin.y);
@@ -184,15 +211,21 @@ public class Drop extends ApplicationAdapter {
                 batch.draw(yellowBin, bin.x, bin.y);
             counter++;
         }
+        //SMETI
         for(Trash t: vseSmeti) {
 			trashImage = new Texture(Gdx.files.internal(t.getImg()));
             batch.draw(trashImage, t.getSmet().x, t.getSmet().y);
         }
-		font.draw(batch, litterText, camera.position.x - 500, camera.position.y + 350);
+        //IGRALEC
 		batch.draw(bucketImage, bucket.x, bucket.y);
+		//DREVESA
 		batch.draw(tree, tree1.x, tree1.y);
 		batch.draw(tree, tree2.x, tree2.y);
 		batch.draw(tree, tree3.x, tree3.y);
+		//BESEDILA
+		font.draw(batch, litterText, camera.position.x - 500, camera.position.y + 330);
+		inventoryFont.draw(batch, inventoryText, camera.position.x + 350, camera.position.y + 330);
+		scoreFont.draw(batch, scoreText, camera.position.x - 50, camera.position.y + 330);
 		//KONEC RISANJA NA ZASLON
         batch.end();
         stage.act(Gdx.graphics.getDeltaTime());
@@ -225,13 +258,22 @@ public class Drop extends ApplicationAdapter {
 		while(iter.hasNext()) {
 			Trash trash = iter.next();
 			if(trash.getSmet().overlaps(bucket)) {
-				Inventory.add(trash);
-				currentInventory = currentInventory + trash.getWeight();
-				dropSound.play();
-				iter.remove();
-				numberOfTrash--;
+				if(currentInventory + trash.getWeight() <= inventorySize) {
+					Inventory.add(trash);
+					currentInventory = currentInventory + trash.getWeight();
+					dropSound.play();
+					iter.remove();
+					numberOfTrash--;
+				}
 			}
 		}
+
+		dajVKos(0, TrashType.METAL);
+		dajVKos(1, TrashType.GLASS);
+		dajVKos(2, TrashType.PAPER);
+		dajVKos(3, TrashType.PLASTIC);
+
+
 
 	}
 	
@@ -242,14 +284,24 @@ public class Drop extends ApplicationAdapter {
 		dropSound.dispose();
 		rainMusic.dispose();
 		batch.dispose();
+		blueBin.dispose();
+		redBin.dispose();
+		yellowBin.dispose();
+		greenBin.dispose();
+		tree.dispose();
+		metalSound.dispose();
+		plasticSound.dispose();
+		paperSound.dispose();
+		glassSound.dispose();
+		background.dispose();
 	}
 
 	private void spawnTrash() {
-		Trash nov = smeti.get(MathUtils.random(0,15));
+		Trash nov = smeti.get(rand.nextInt(16 - 0) + 0).create_clone();
         counter = counter + 1;
 		Rectangle smet = new Rectangle();
-		smet.x = MathUtils.random(360, 3600);
-		smet.y = MathUtils.random(0, 1900);
+		smet.x = rand.nextInt(3950-200)+200;
+		smet.y = rand.nextInt(1815 - 105) + 105;
 		if(smet.x > 1810 && smet.x < 2005 && smet.y < 1247 && smet.y > 1115){
 			smet.y = smet.y - 30;
 		}
@@ -314,9 +366,9 @@ public class Drop extends ApplicationAdapter {
 		smeti.add(new Trash(18, 52, "st_pivo2", 180, 1, "t11.png", TrashType.GLASS));
 		smeti.add(new Trash(31, 28, "st_loncek", 150, 1, "t12.png", TrashType.GLASS));
 		smeti.add(new Trash(20, 36, "me_cola", 110, 1, "t13.png", TrashType.METAL));
-		smeti.add(new Trash(25, 32, "me_spraj", 150, 1, "t1.png", TrashType.METAL));
-		smeti.add(new Trash(18, 42, "me_konzerva1", 120, 1, "t1.png", TrashType.METAL));
-		smeti.add(new Trash(25, 41, "me_konzerva2", 200, 2, "t1.png", TrashType.METAL));
+		smeti.add(new Trash(25, 32, "me_spraj", 150, 1, "t14.png", TrashType.METAL));
+		smeti.add(new Trash(18, 42, "me_konzerva1", 120, 1, "t15.png", TrashType.METAL));
+		smeti.add(new Trash(25, 41, "me_konzerva2", 200, 2, "t16.png", TrashType.METAL));
 	}
 
 	private void narediDrevesa(){
@@ -335,5 +387,29 @@ public class Drop extends ApplicationAdapter {
 		tree3.y = 1480;
 		tree3.width = 166;
 		tree3.height = 237;
+	}
+
+	private void dajVKos(int b, TrashType t){
+		zvok = false;
+		if(bucket.overlaps(bins.get(b))){
+			for (int i=0; i<Inventory.size; i++) {
+				if (Inventory.get(i).getType() == t) {
+					score = score + Inventory.get(i).getValue();
+					currentInventory = currentInventory - Inventory.get(i).getWeight();
+					Inventory.removeIndex(i);
+					zvok = true;
+				}
+			}
+		}
+		if(zvok){
+			if(t == TrashType.GLASS)
+				glassSound.play();
+			else if(t == TrashType.METAL)
+				metalSound.play();
+			else if(t == TrashType.PLASTIC)
+				plasticSound.play();
+			else if(t == TrashType.PAPER)
+				paperSound.play();
+		}
 	}
 }
