@@ -32,6 +32,8 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 public class Drop extends ApplicationAdapter {
+
+	//////////// TEXTURE   ////////////
 	private Texture trashImage;
 	private Texture bucketImage;
     private Texture background;
@@ -41,6 +43,10 @@ public class Drop extends ApplicationAdapter {
     private Texture yellowBin;
 	private Texture basicBin;
 	private Texture tree;
+	private TextureRegion[] regions;
+    //////////////////////////////////
+	//////// ZVOKI /////////////////
+	private Sound crackSound;
 	private Sound dropSound;
 	private Sound paperSound;
 	private Sound metalSound;
@@ -49,56 +55,58 @@ public class Drop extends ApplicationAdapter {
 	private Music rainMusic;
 	private OrthographicCamera camera;
 	private SpriteBatch batch;
-
+    ////////////////////////////////
+	////// RECTANGLI ///////////////
 	private Rectangle bucket;
 	private Rectangle tree1;
 	private Rectangle tree2;
 	private Rectangle tree3;
-
+    ////////////////////////////////
 	//POLJA Z SMETMI/KOŠIM/SMETEH NA TLEH
 	private Array<Trash> vseSmeti;
     private Array<Rectangle> bins;
 	private boolean[] booleanBins = new boolean[4];
 	private Array<Trash> smeti;
-
-	//INVENTORY
+	/////////////////////////////////
+	//INVENTORY  ///////////////////
 	private Array<Trash> Inventory;
 	private int inventorySize = 10;
 	private int currentInventory = 0;
 	private int score = 0;
 
-	//private long lastDropTime;
-
-    ////////// MOJE
+    ////////// OTHER
     private Viewport viewport;
-    private long timer;
+	/////// INT/DOUBLE
     private int counter;
-    private int advance;
 	private int numberOfTrash;
+	private float speed;
+	private float oldX;
+	private float oldY;
+	private int binChance = 30;
+	private Random rand;
+	////// FONTI/TEXTI
 	private BitmapFont font;
 	private BitmapFont inventoryFont;
 	private BitmapFont scoreFont;
 	private BitmapFont timerFont;
+	////// UPORABLJENI STRINGI
 	private String litterText;
 	private String inventoryText;
 	private String scoreText;
 	private String timerText;
+
 	private Touchpad touchpad;
 	private Skin touchpadSkin;
 	private Touchpad.TouchpadStyle touchpadStyle;
 	private Drawable touchBackground;
 	private Drawable touchKnob;
 	private Stage stage;
-	private float speed;
-    private Sprite player;
-	float oldX;
-	float oldY;
 	boolean zvok;
     private Animation<TextureRegion> walkAnimation;
     private Texture[] walkSheet;
-	Random rand;
-	private int binChance = 30;
     /////////
+    //// MY CLASSES
+    Ozadje ozadje;
 	
 	@Override
 	public void create () {
@@ -109,7 +117,6 @@ public class Drop extends ApplicationAdapter {
 		timerFont = new BitmapFont();
 
         background = new Texture(Gdx.files.internal("background2.png"));
-		//trashImage = new Texture(Gdx.files.internal("t1.png"));
 		bucketImage = new Texture(Gdx.files.internal("Hat_man1.png"));
         blueBin = new Texture(Gdx.files.internal("blueBin.png"));
         redBin = new Texture(Gdx.files.internal("redBin.png"));
@@ -117,6 +124,8 @@ public class Drop extends ApplicationAdapter {
         yellowBin = new Texture(Gdx.files.internal("orangeBin.png"));
 		basicBin = new Texture(Gdx.files.internal("basicBin.png"));
 		tree = new Texture(Gdx.files.internal("tree.png"));
+		ozadje = new Ozadje();
+		createRegions(ozadje);
 
 		// load the sound effects and the rain background "music"
 		dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
@@ -125,6 +134,7 @@ public class Drop extends ApplicationAdapter {
 		glassSound = Gdx.audio.newSound(Gdx.files.internal("steklo.mp3"));
 		metalSound = Gdx.audio.newSound(Gdx.files.internal("kovina.mp3"));
 		plasticSound = Gdx.audio.newSound(Gdx.files.internal("plastika.mp3"));
+		crackSound = Gdx.audio.newSound(Gdx.files.internal("crackSound.mp3"));
 
 		// start the playback of the background music immediately
 		rainMusic.setLooping(true);
@@ -143,9 +153,7 @@ public class Drop extends ApplicationAdapter {
 
 		//////////// MOJE
 		speed = 8;
-        timer = 1000000000;
         counter = 0;
-        //advance = 10;
 		//ŠTEVILO ODPADKOV
 		numberOfTrash = 20;
 		//////////////////
@@ -181,6 +189,8 @@ public class Drop extends ApplicationAdapter {
 	public void render () {
 		oldX = bucket.x;
 		oldY = bucket.y;
+        int Xpos = (int)camera.position.x;
+        int Ypos = (int)camera.position.y;
 		Gdx.gl.glClearColor(0, 0, 0.2f, 1);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
@@ -203,39 +213,36 @@ public class Drop extends ApplicationAdapter {
 		bucket.setY(bucket.getY() + touchpad.getKnobPercentY()*speed);
 
 		batch.begin();
-		//ZAČETEK RISANJA NA ZASLON
-        batch.draw(background,0,0);  //OZADJE
-        int counter = 0;
-		//KOŠI ZA SMETI
-        for(Rectangle bin: bins){
-            if(counter == 0)
-                batch.draw(blueBin, bin.x, bin.y);
-            if(counter == 1)
-                batch.draw(redBin, bin.x, bin.y);
-            if(counter == 2)
-                batch.draw(greenBin, bin.x, bin.y);
-            if(counter == 3)
-                batch.draw(yellowBin, bin.x, bin.y);
-			if(counter == 4)
-				batch.draw(basicBin, bin.x, bin.y);
-            counter++;
-        }
-        //SMETI
-        for(Trash t: vseSmeti) {
-			trashImage = new Texture(Gdx.files.internal(t.getImg()));
-            batch.draw(trashImage, t.getSmet().x, t.getSmet().y);
-        }
-        //IGRALEC
-		batch.draw(bucketImage, bucket.x, bucket.y);
-		//DREVESA
-		batch.draw(tree, tree1.x, tree1.y);
-		batch.draw(tree, tree2.x, tree2.y);
-		batch.draw(tree, tree3.x, tree3.y);
-		//BESEDILA
-		font.draw(batch, litterText, camera.position.x - 500, camera.position.y + 330);
-		inventoryFont.draw(batch, inventoryText, camera.position.x + 350, camera.position.y + 330);
-		scoreFont.draw(batch, scoreText, camera.position.x - 50, camera.position.y + 330);
-		//KONEC RISANJA NA ZASLON
+		//ZAČETEK RISANJA NA ZASLON:
+            //OZADJE
+            for(int i=0; i<32; i++){
+              //  if(Ypos + 650 > (ozadje.getyPos(i) + 270) && Ypos - 650 < ozadje.getyPos(i) + 270 &&
+              //          Xpos + 1200 > (ozadje.getxPos(i) + 580) && Xpos - 600 < ozadje.getxPos(i) + 580) {
+                    batch.draw(ozadje.getXRegion(i), ozadje.getxPos(i), ozadje.getyPos(i));
+               // }
+            }
+			//KOŠI ZA SMETI
+			batch.draw(blueBin, bins.get(0).x, bins.get(0).y);
+			batch.draw(redBin, bins.get(1).x, bins.get(1).y);
+			batch.draw(greenBin, bins.get(2).x, bins.get(2).y);
+			batch.draw(yellowBin, bins.get(3).x, bins.get(3).y);
+			batch.draw(basicBin, bins.get(4).x, bins.get(4).y);
+			//SMETI
+			for(Trash t: vseSmeti) {
+				trashImage = new Texture(Gdx.files.internal(t.getImg()));
+				batch.draw(trashImage, t.getSmet().x, t.getSmet().y);
+			}
+			//IGRALEC
+			batch.draw(bucketImage, bucket.x, bucket.y);
+			//DREVESA
+			batch.draw(tree, tree1.x, tree1.y);
+			batch.draw(tree, tree2.x, tree2.y);
+			batch.draw(tree, tree3.x, tree3.y);
+			//BESEDILA
+			font.draw(batch, litterText, camera.position.x - 500, camera.position.y + 330);
+			inventoryFont.draw(batch, inventoryText, camera.position.x + 350, camera.position.y + 330);
+			scoreFont.draw(batch, scoreText, camera.position.x - 50, camera.position.y + 330);
+			//KONEC RISANJA NA ZASLON
         batch.end();
         stage.act(Gdx.graphics.getDeltaTime());
         stage.draw();
@@ -418,11 +425,15 @@ public class Drop extends ApplicationAdapter {
 			}
 		}
 		if(bucket.overlaps(bins.get(b)) && b == 4){
+			if(Inventory.size > 0)
+				zvok = true;
 			for (int i=0; i<Inventory.size; i++) {
 				score = score + Inventory.get(i).getValue() / 2;
 				currentInventory = currentInventory - Inventory.get(i).getWeight();
 				Inventory.removeIndex(i);
 			}
+			if(zvok)
+				crackSound.play();
 		}
 		else if(zvok){
 			if(t == TrashType.GLASS)
@@ -443,6 +454,21 @@ public class Drop extends ApplicationAdapter {
 					greenBin = new Texture(Gdx.files.internal("greenBin2.png"));
 				else if(b == 3)
 					yellowBin = new Texture(Gdx.files.internal("orangeBin2.png"));
+			}
+		}
+	}
+
+	private void createRegions(Ozadje o){
+		int x = 0;
+		int y = 0;
+		for(int i=0; i<32; i++){
+			o.setXRegion(i, new TextureRegion(background,x,y, 512, 512));
+            o.setxPos(i, x);
+            o.setyPos(i, 1536 - y);
+			x = x + 512;
+			if(x == 4096){
+				y = y + 512;
+				x = 0;
 			}
 		}
 	}
