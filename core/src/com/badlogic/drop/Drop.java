@@ -39,6 +39,7 @@ public class Drop extends ApplicationAdapter {
     private Texture redBin;
     private Texture greenBin;
     private Texture yellowBin;
+	private Texture basicBin;
 	private Texture tree;
 	private Sound dropSound;
 	private Sound paperSound;
@@ -57,6 +58,7 @@ public class Drop extends ApplicationAdapter {
 	//POLJA Z SMETMI/KOŠIM/SMETEH NA TLEH
 	private Array<Trash> vseSmeti;
     private Array<Rectangle> bins;
+	private boolean[] booleanBins = new boolean[4];
 	private Array<Trash> smeti;
 
 	//INVENTORY
@@ -95,6 +97,7 @@ public class Drop extends ApplicationAdapter {
     private Animation<TextureRegion> walkAnimation;
     private Texture[] walkSheet;
 	Random rand;
+	private int binChance = 30;
     /////////
 	
 	@Override
@@ -112,6 +115,7 @@ public class Drop extends ApplicationAdapter {
         redBin = new Texture(Gdx.files.internal("redBin.png"));
         greenBin = new Texture(Gdx.files.internal("greenBin.png"));
         yellowBin = new Texture(Gdx.files.internal("orangeBin.png"));
+		basicBin = new Texture(Gdx.files.internal("basicBin.png"));
 		tree = new Texture(Gdx.files.internal("tree.png"));
 
 		// load the sound effects and the rain background "music"
@@ -159,6 +163,9 @@ public class Drop extends ApplicationAdapter {
 		vseSmeti = new Array<Trash>();
 		Inventory = new Array<Trash>();
 		createBins();
+		for(int i=0; i<4; i++){
+			booleanBins[i] = false;
+		}
 		createTrash();
 		//spawnRaindrop();
 		for(int i=0; i<numberOfTrash; i++){
@@ -209,6 +216,8 @@ public class Drop extends ApplicationAdapter {
                 batch.draw(greenBin, bin.x, bin.y);
             if(counter == 3)
                 batch.draw(yellowBin, bin.x, bin.y);
+			if(counter == 4)
+				batch.draw(basicBin, bin.x, bin.y);
             counter++;
         }
         //SMETI
@@ -268,10 +277,11 @@ public class Drop extends ApplicationAdapter {
 			}
 		}
 
-		dajVKos(0, TrashType.METAL);
-		dajVKos(1, TrashType.GLASS);
-		dajVKos(2, TrashType.PAPER);
-		dajVKos(3, TrashType.PLASTIC);
+		dajVKos(0, TrashType.METAL, booleanBins[0]);
+		dajVKos(1, TrashType.GLASS, booleanBins[1]);
+		dajVKos(2, TrashType.PAPER, booleanBins[2]);
+		dajVKos(3, TrashType.PLASTIC, booleanBins[3]);
+		dajVKos(4, TrashType.ALL, true);
 
 
 
@@ -350,6 +360,12 @@ public class Drop extends ApplicationAdapter {
             stevec = stevec + 150;
             bins.add(bin);
         }
+        Rectangle bin = new Rectangle();
+		bin.x = 600;
+		bin.y = 150;
+		bin.width = 140;
+		bin.height = 140;
+		bins.add(bin);
     }
 
     private void createTrash(){
@@ -389,9 +405,9 @@ public class Drop extends ApplicationAdapter {
 		tree3.height = 237;
 	}
 
-	private void dajVKos(int b, TrashType t){
+	private void dajVKos(int b, TrashType t, boolean isFull){
 		zvok = false;
-		if(bucket.overlaps(bins.get(b))){
+		if(bucket.overlaps(bins.get(b)) && !isFull){
 			for (int i=0; i<Inventory.size; i++) {
 				if (Inventory.get(i).getType() == t) {
 					score = score + Inventory.get(i).getValue();
@@ -401,7 +417,14 @@ public class Drop extends ApplicationAdapter {
 				}
 			}
 		}
-		if(zvok){
+		if(bucket.overlaps(bins.get(b)) && b == 4){
+			for (int i=0; i<Inventory.size; i++) {
+				score = score + Inventory.get(i).getValue() / 2;
+				currentInventory = currentInventory - Inventory.get(i).getWeight();
+				Inventory.removeIndex(i);
+			}
+		}
+		else if(zvok){
 			if(t == TrashType.GLASS)
 				glassSound.play();
 			else if(t == TrashType.METAL)
@@ -410,6 +433,17 @@ public class Drop extends ApplicationAdapter {
 				plasticSound.play();
 			else if(t == TrashType.PAPER)
 				paperSound.play();
+			if(rand.nextInt(100 - 0) + 0 < binChance){
+				booleanBins[b] = true;
+				if(b == 0)
+					blueBin = new Texture(Gdx.files.internal("blueBin2.png"));
+				else if(b == 1)
+					redBin = new Texture(Gdx.files.internal("redBin2.png"));
+				else if(b == 2)
+					greenBin = new Texture(Gdx.files.internal("greenBin2.png"));
+				else if(b == 3)
+					yellowBin = new Texture(Gdx.files.internal("orangeBin2.png"));
+			}
 		}
 	}
 }

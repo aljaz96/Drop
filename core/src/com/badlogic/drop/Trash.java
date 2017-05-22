@@ -18,7 +18,7 @@ public class Trash{
     Rectangle smet;
 
     Trash create_clone(){
-        return new Trash(width,height,name,weight,value,img,type);
+        return new Trash(width,height,name,value,weight,img,type,smet);
     };
 
     Trash(int x, int y, String n, int v, int w, String i ,TrashType t){

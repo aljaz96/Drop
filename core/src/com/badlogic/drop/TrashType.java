@@ -5,5 +5,5 @@ package com.badlogic.drop;
  */
 
 public enum TrashType {
-    GLASS, PLASTIC, PAPER, ORGANIC, METAL
+    GLASS, PLASTIC, PAPER, ORGANIC, METAL, ALL
 }
