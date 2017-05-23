@@ -44,6 +44,7 @@ public class Drop extends ApplicationAdapter {
 	private Texture basicBin;
 	private Texture tree;
 	private TextureRegion[] regions;
+	private Texture bagImage;
     //////////////////////////////////
 	//////// ZVOKI /////////////////
 	private Sound crackSound;
@@ -61,6 +62,7 @@ public class Drop extends ApplicationAdapter {
 	private Rectangle tree1;
 	private Rectangle tree2;
 	private Rectangle tree3;
+	private Rectangle bag;
     ////////////////////////////////
 	//POLJA Z SMETMI/KOŠIM/SMETEH NA TLEH
 	private Array<Trash> vseSmeti;
@@ -104,6 +106,7 @@ public class Drop extends ApplicationAdapter {
 	boolean zvok;
     private Animation<TextureRegion> walkAnimation;
     private Texture[] walkSheet;
+	private boolean reciklira;
     /////////
     //// MY CLASSES
     Ozadje ozadje;
@@ -124,6 +127,7 @@ public class Drop extends ApplicationAdapter {
         yellowBin = new Texture(Gdx.files.internal("orangeBin.png"));
 		basicBin = new Texture(Gdx.files.internal("basicBin.png"));
 		tree = new Texture(Gdx.files.internal("tree.png"));
+		bagImage = new Texture(Gdx.files.internal("bag.png"));
 		ozadje = new Ozadje();
 		createRegions(ozadje);
 
@@ -151,11 +155,16 @@ public class Drop extends ApplicationAdapter {
 		bucket.width = 64;
 		bucket.height = 90;
 
+		bag = new Rectangle();
+		bag.width = 57;
+		bag.height = 51;
+
 		//////////// MOJE
+		reciklira = false;
 		speed = 8;
         counter = 0;
 		//ŠTEVILO ODPADKOV
-		numberOfTrash = 20;
+		numberOfTrash = 25;
 		//////////////////
 		font.getData().setScale(1.5f,1.5f);
 		inventoryFont.getData().setScale(1.5f, 1.5f);
@@ -196,9 +205,9 @@ public class Drop extends ApplicationAdapter {
 
 		//litterText = "Litter left: " + numberOfTrash;
 		litterText = "Litter left: " + numberOfTrash;
-		inventoryText = "Inventory space: " + currentInventory + "/" + inventorySize;
+		inventoryText = " " + currentInventory + "/" + inventorySize;
 		scoreText = "Score: " + score;
-		if(currentInventory == inventorySize){ inventoryText = "Inventory space: FULL"; }
+		if(currentInventory == inventorySize){ inventoryText = " FULL"; }
 		camera.position.x = bucket.getX() + 64 / 2;
 		camera.position.y = bucket.getY() + 90 / 2;
 		if(camera.position.x < 605){ camera.position.x = 605;}
@@ -239,8 +248,9 @@ public class Drop extends ApplicationAdapter {
 			batch.draw(tree, tree2.x, tree2.y);
 			batch.draw(tree, tree3.x, tree3.y);
 			//BESEDILA
+			batch.draw(bagImage, camera.position.x + 300, camera.position.y + 290);
 			font.draw(batch, litterText, camera.position.x - 500, camera.position.y + 330);
-			inventoryFont.draw(batch, inventoryText, camera.position.x + 350, camera.position.y + 330);
+			inventoryFont.draw(batch, inventoryText, camera.position.x + 360, camera.position.y + 325);
 			scoreFont.draw(batch, scoreText, camera.position.x - 50, camera.position.y + 330);
 			//KONEC RISANJA NA ZASLON
         batch.end();
@@ -364,7 +374,7 @@ public class Drop extends ApplicationAdapter {
             bin.y = 600 + stevec;
             bin.width = 140;
             bin.height = 140;
-            stevec = stevec + 150;
+            stevec = stevec + 250;
             bins.add(bin);
         }
         Rectangle bin = new Rectangle();
@@ -414,7 +424,8 @@ public class Drop extends ApplicationAdapter {
 
 	private void dajVKos(int b, TrashType t, boolean isFull){
 		zvok = false;
-		if(bucket.overlaps(bins.get(b)) && !isFull){
+		if(bucket.overlaps(bins.get(b)) && !isFull && !reciklira){
+			reciklira = true;
 			for (int i=0; i<Inventory.size; i++) {
 				if (Inventory.get(i).getType() == t) {
 					score = score + Inventory.get(i).getValue();
@@ -424,9 +435,11 @@ public class Drop extends ApplicationAdapter {
 				}
 			}
 		}
-		if(bucket.overlaps(bins.get(b)) && b == 4){
-			if(Inventory.size > 0)
+		if(bucket.overlaps(bins.get(b)) && b == 4 && !reciklira){
+			if(Inventory.size > 0) {
 				zvok = true;
+				reciklira = true;
+			}
 			for (int i=0; i<Inventory.size; i++) {
 				score = score + Inventory.get(i).getValue() / 2;
 				currentInventory = currentInventory - Inventory.get(i).getWeight();
@@ -456,6 +469,7 @@ public class Drop extends ApplicationAdapter {
 					yellowBin = new Texture(Gdx.files.internal("orangeBin2.png"));
 			}
 		}
+		reciklira = false;
 	}
 
 	private void createRegions(Ozadje o){
