@@ -3,6 +3,7 @@ package com.badlogic.drop;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
@@ -31,8 +32,9 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-public class Drop extends ApplicationAdapter {
+public class Drop implements Screen {
 
+	final Igra game;
 	//////////// TEXTURE   ////////////
 	private Texture trashImage;
 	private Texture bucketImage;
@@ -44,6 +46,7 @@ public class Drop extends ApplicationAdapter {
 	private Texture basicBin;
 	private Texture tree;
 	private TextureRegion[] regions;
+	private TextureRegion playerImage;
 	private Texture bagImage;
     //////////////////////////////////
 	//////// ZVOKI /////////////////
@@ -53,7 +56,7 @@ public class Drop extends ApplicationAdapter {
 	private Sound metalSound;
 	private Sound plasticSound;
 	private Sound glassSound;
-	private Music rainMusic;
+	private Music music;
 	private OrthographicCamera camera;
 	private SpriteBatch batch;
     ////////////////////////////////
@@ -86,6 +89,7 @@ public class Drop extends ApplicationAdapter {
 	private float oldY;
 	private int binChance = 30;
 	private Random rand;
+	private int wait;
 	////// FONTI/TEXTI
 	private BitmapFont font;
 	private BitmapFont inventoryFont;
@@ -104,15 +108,18 @@ public class Drop extends ApplicationAdapter {
 	private Drawable touchKnob;
 	private Stage stage;
 	boolean zvok;
-    private Animation<TextureRegion> walkAnimation;
+    private Animation<TextureRegion> runningAnimation;
+	private Texture walk;
     private Texture[] walkSheet;
 	private boolean reciklira;
+	private boolean playerDirection = true;
+	private float stateTime;
     /////////
     //// MY CLASSES
     Ozadje ozadje;
-	
-	@Override
-	public void create () {
+
+	public Drop(final Igra gam) {
+		this.game = gam;
 		rand = new Random();
 		font = new BitmapFont();
 		inventoryFont = new BitmapFont();
@@ -133,7 +140,7 @@ public class Drop extends ApplicationAdapter {
 
 		// load the sound effects and the rain background "music"
 		dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
-		rainMusic = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
+		music = Gdx.audio.newMusic(Gdx.files.internal("gameTheme.mp3"));
 		paperSound = Gdx.audio.newSound(Gdx.files.internal("papir.mp3"));
 		glassSound = Gdx.audio.newSound(Gdx.files.internal("steklo.mp3"));
 		metalSound = Gdx.audio.newSound(Gdx.files.internal("kovina.mp3"));
@@ -141,8 +148,8 @@ public class Drop extends ApplicationAdapter {
 		crackSound = Gdx.audio.newSound(Gdx.files.internal("crackSound.mp3"));
 
 		// start the playback of the background music immediately
-		rainMusic.setLooping(true);
-		rainMusic.play();
+		music.setLooping(true);
+		music.play();
 
       //... more to come ...
 		camera = new OrthographicCamera();
@@ -160,6 +167,7 @@ public class Drop extends ApplicationAdapter {
 		bag.height = 51;
 
 		//////////// MOJE
+		stateTime = 0f;
 		reciklira = false;
 		speed = 8;
         counter = 0;
@@ -173,6 +181,20 @@ public class Drop extends ApplicationAdapter {
 		camera.viewportWidth = 1200;
 		camera.viewportHeight = 700;
 		//float aspectRation = (float) Gdx.graphics.getWidth() / (float) Gdx.graphics.getHeight();
+		walk = new Texture(Gdx.files.internal("Hat_man.png"));
+		TextureRegion[][] tmp = TextureRegion.split(walk,
+				walk.getWidth() / 2,
+				walk.getHeight() / 2);
+
+		TextureRegion[] walkFrames = new TextureRegion[2 * 2];
+		int index = 0;
+		for (int i = 0; i < 2; i++) {
+			for (int j = 0; j < 2; j++) {
+				walkFrames[index++] = tmp[i][j];
+			}
+		}
+		runningAnimation = new Animation<TextureRegion>(0.1f, walkFrames);
+
         createTouchPad();
 
         bins = new Array<Rectangle>();
@@ -195,16 +217,29 @@ public class Drop extends ApplicationAdapter {
 	//dodaj spreminjajoče kante/inventory/nove smeti/ mogoče drevesa/mogoče ozadaje poštimati
 
 	@Override
-	public void render () {
-		oldX = bucket.x;
-		oldY = bucket.y;
-        int Xpos = (int)camera.position.x;
-        int Ypos = (int)camera.position.y;
+	public void render (float delta) {
 		Gdx.gl.glClearColor(0, 0, 0.2f, 1);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+		stateTime += Gdx.graphics.getDeltaTime();
+
+		if((int)oldX == (int)bucket.x && (int)oldY == (int)bucket.y){
+			playerImage = new TextureRegion(bucketImage, 100, 100);
+		}
+		else{
+			playerImage = runningAnimation.getKeyFrame(stateTime, true);
+		}
+		if(oldX > bucket.x){ playerDirection = true;}
+		if(oldX < bucket.x){ playerDirection = false;}
+
+		oldX = bucket.x;
+		oldY = bucket.y;
+
+        int Xpos = (int)camera.position.x;
+        int Ypos = (int)camera.position.y;
+
 
 		//litterText = "Litter left: " + numberOfTrash;
-		litterText = "Litter left: " + numberOfTrash;
+		litterText = "Litter left: " +  numberOfTrash;
 		inventoryText = " " + currentInventory + "/" + inventorySize;
 		scoreText = "Score: " + score;
 		if(currentInventory == inventorySize){ inventoryText = " FULL"; }
@@ -218,17 +253,14 @@ public class Drop extends ApplicationAdapter {
 
         batch.setProjectionMatrix(camera.combined);
 
-		bucket.setX(bucket.getX() + touchpad.getKnobPercentX()*speed);
-		bucket.setY(bucket.getY() + touchpad.getKnobPercentY()*speed);
-
 		batch.begin();
 		//ZAČETEK RISANJA NA ZASLON:
             //OZADJE
             for(int i=0; i<32; i++){
-              //  if(Ypos + 650 > (ozadje.getyPos(i) + 270) && Ypos - 650 < ozadje.getyPos(i) + 270 &&
-              //          Xpos + 1200 > (ozadje.getxPos(i) + 580) && Xpos - 600 < ozadje.getxPos(i) + 580) {
+                if(Ypos + 650 > (ozadje.getyPos(i) + 270) && Ypos - 650 < ozadje.getyPos(i) + 270 &&
+                        Xpos + 1200 > (ozadje.getxPos(i) + 580) && Xpos - 600 < ozadje.getxPos(i) + 580) {
                     batch.draw(ozadje.getXRegion(i), ozadje.getxPos(i), ozadje.getyPos(i));
-               // }
+                }
             }
 			//KOŠI ZA SMETI
 			batch.draw(blueBin, bins.get(0).x, bins.get(0).y);
@@ -242,7 +274,8 @@ public class Drop extends ApplicationAdapter {
 				batch.draw(trashImage, t.getSmet().x, t.getSmet().y);
 			}
 			//IGRALEC
-			batch.draw(bucketImage, bucket.x, bucket.y);
+			batch.draw(playerImage, playerDirection ? bucket.x+100 : bucket.x, bucket.y, playerDirection ? -100 : 100, 100);
+			//spriteBatch.draw(currentFrame, flip ? x+width : x, y, flip ? -width : width, height);
 			//DREVESA
 			batch.draw(tree, tree1.x, tree1.y);
 			batch.draw(tree, tree2.x, tree2.y);
@@ -257,10 +290,24 @@ public class Drop extends ApplicationAdapter {
         stage.act(Gdx.graphics.getDeltaTime());
         stage.draw();
 
-		if(Gdx.input.isKeyPressed(Input.Keys.LEFT)) bucket.x -= 66 * speed * Gdx.graphics.getDeltaTime();
-		if(Gdx.input.isKeyPressed(Input.Keys.RIGHT)) bucket.x += 66 * speed * Gdx.graphics.getDeltaTime();
-		if(Gdx.input.isKeyPressed(Input.Keys.UP)) bucket.y += 66 * speed * Gdx.graphics.getDeltaTime();
-		if(Gdx.input.isKeyPressed(Input.Keys.DOWN)) bucket.y -= 66 * speed * Gdx.graphics.getDeltaTime();
+		if(wait <= 0) {
+			bucket.setX(bucket.getX() + touchpad.getKnobPercentX() * speed);
+			bucket.setY(bucket.getY() + touchpad.getKnobPercentY() * speed);
+			if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+				bucket.x -= 66 * speed * Gdx.graphics.getDeltaTime();
+				playerDirection = true;
+			}
+			if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+				bucket.x += 66 * speed * Gdx.graphics.getDeltaTime();
+				playerDirection = false;
+			}
+			if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
+				bucket.y += 66 * speed * Gdx.graphics.getDeltaTime();
+			}
+			if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
+				bucket.y -= 66 * speed * Gdx.graphics.getDeltaTime();
+			}
+		}
 
 		if(bucket.y < 105) bucket.y = 105;
 		if(bucket.y > 1815 ) bucket.y = 1815;
@@ -280,6 +327,8 @@ public class Drop extends ApplicationAdapter {
 			bucket.x = oldX;
 			bucket.y = oldY;
 		}
+
+
 		Iterator<Trash> iter = vseSmeti.iterator();
 		while(iter.hasNext()) {
 			Trash trash = iter.next();
@@ -300,7 +349,7 @@ public class Drop extends ApplicationAdapter {
 		dajVKos(3, TrashType.PLASTIC, booleanBins[3]);
 		dajVKos(4, TrashType.ALL, true);
 
-
+		wait--;
 
 	}
 	
@@ -309,7 +358,7 @@ public class Drop extends ApplicationAdapter {
 		trashImage.dispose();
 		bucketImage.dispose();
 		dropSound.dispose();
-		rainMusic.dispose();
+		music.dispose();
 		batch.dispose();
 		blueBin.dispose();
 		redBin.dispose();
@@ -372,7 +421,7 @@ public class Drop extends ApplicationAdapter {
             Rectangle bin = new Rectangle();
             bin.x = 100;
             bin.y = 600 + stevec;
-            bin.width = 140;
+            bin.width = 100;
             bin.height = 140;
             stevec = stevec + 250;
             bins.add(bin);
@@ -380,7 +429,7 @@ public class Drop extends ApplicationAdapter {
         Rectangle bin = new Rectangle();
 		bin.x = 600;
 		bin.y = 150;
-		bin.width = 140;
+		bin.width = 100;
 		bin.height = 140;
 		bins.add(bin);
     }
@@ -432,6 +481,7 @@ public class Drop extends ApplicationAdapter {
 					currentInventory = currentInventory - Inventory.get(i).getWeight();
 					Inventory.removeIndex(i);
 					zvok = true;
+					wait = 40;
 				}
 			}
 		}
@@ -439,6 +489,7 @@ public class Drop extends ApplicationAdapter {
 			if(Inventory.size > 0) {
 				zvok = true;
 				reciklira = true;
+				wait = 40;
 			}
 			for (int i=0; i<Inventory.size; i++) {
 				score = score + Inventory.get(i).getValue() / 2;
@@ -486,4 +537,26 @@ public class Drop extends ApplicationAdapter {
 			}
 		}
 	}
+
+	@Override
+	public void resize(int width, int height) {}
+
+	@Override
+	public void show() {
+		// start the playback of the background music
+		// when the screen is shown
+		music.play();
+	}
+
+	@Override
+	public void hide() {}
+
+	@Override
+	public void pause() {}
+
+	@Override
+	public void resume() {}
+
+
+
 }
