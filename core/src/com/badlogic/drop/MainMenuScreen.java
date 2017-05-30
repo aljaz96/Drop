@@ -25,10 +25,10 @@ public class MainMenuScreen implements Screen {
     public MainMenuScreen(final Igra game) {
         this.game = game;
         music = Gdx.audio.newMusic(Gdx.files.internal("menuTheme.mp3"));
-        walk = new Texture(Gdx.files.internal("Hat_man.png"));
         background = new Texture(Gdx.files.internal("Test.png"));
         name = new Texture(Gdx.files.internal("name.png"));
         bin = new Texture(Gdx.files.internal("t5.png"));
+        walk = new Texture(Gdx.files.internal("Hat_man.png"));
         TextureRegion[][] tmp = TextureRegion.split(walk,
                 walk.getWidth() / 2,
                 walk.getHeight() / 2);
