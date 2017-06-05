@@ -6,6 +6,7 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
@@ -17,15 +18,25 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Dialog;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.List;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Touchpad;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
+import com.badlogic.gdx.utils.Timer;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import com.badlogic.gdx.scenes.scene2d.ui.Dialog;
 
 import java.security.SecureRandom;
 import java.util.Iterator;
@@ -48,6 +59,14 @@ public class Drop implements Screen {
 	private TextureRegion[] regions;
 	private TextureRegion playerImage;
 	private Texture bagImage;
+	private Texture popUP;
+	private Texture winText;
+	private Texture failText;
+	private Texture menu;
+	private Texture retry;
+	private Texture continuee;
+	private Texture standing;
+	private Texture x;
     //////////////////////////////////
 	//////// ZVOKI /////////////////
 	private Sound crackSound;
@@ -87,7 +106,8 @@ public class Drop implements Screen {
 	private float speed;
 	private float oldX;
 	private float oldY;
-	private int binChance = 30;
+	private int binChance = 20;
+	int totalScore = 0;
 	private Random rand;
 	private int wait;
 	////// FONTI/TEXTI
@@ -114,12 +134,17 @@ public class Drop implements Screen {
 	private boolean reciklira;
 	private boolean playerDirection = true;
 	private float stateTime;
-    /////////
+
+	float time = 120;
+	boolean gameOn;
+	boolean win;
     //// MY CLASSES
     Ozadje ozadje;
 
 	public Drop(final Igra gam) {
 		this.game = gam;
+		gameOn = true;
+		win = false;
 		rand = new Random();
 		font = new BitmapFont();
 		inventoryFont = new BitmapFont();
@@ -135,6 +160,14 @@ public class Drop implements Screen {
 		basicBin = new Texture(Gdx.files.internal("basicBin.png"));
 		tree = new Texture(Gdx.files.internal("tree.png"));
 		bagImage = new Texture(Gdx.files.internal("bag.png"));
+		popUP = new Texture(Gdx.files.internal("popUp.png"));
+		failText = new Texture(Gdx.files.internal("stage_failed.png"));
+		winText = new Texture(Gdx.files.internal("stage_complete.png"));
+		menu = new Texture(Gdx.files.internal("menu.png"));
+		retry = new Texture(Gdx.files.internal("retry.png"));
+		continuee = new Texture(Gdx.files.internal("continue.png"));
+		standing = new Texture(Gdx.files.internal("Hat_man.png"));
+		x = new Texture(Gdx.files.internal("x.png"));
 		ozadje = new Ozadje();
 		createRegions(ozadje);
 
@@ -181,7 +214,7 @@ public class Drop implements Screen {
 		camera.viewportWidth = 1200;
 		camera.viewportHeight = 700;
 		//float aspectRation = (float) Gdx.graphics.getWidth() / (float) Gdx.graphics.getHeight();
-		walk = new Texture(Gdx.files.internal("Hat_man.png"));
+		walk = standing;
 		TextureRegion[][] tmp = TextureRegion.split(walk,
 				walk.getWidth() / 2,
 				walk.getHeight() / 2);
@@ -222,6 +255,20 @@ public class Drop implements Screen {
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 		stateTime += Gdx.graphics.getDeltaTime();
 
+		if(gameOn) {
+			float deltaTime = Gdx.graphics.getDeltaTime();
+			time -= deltaTime;
+			if(time <= 0){
+				gameOn = false;
+				win = false;
+			}
+		}
+
+		if(gameOn && numberOfTrash == 0 && currentInventory == 0){
+			win = true;
+			gameOn = false;
+		}
+
 		if((int)oldX == (int)bucket.x && (int)oldY == (int)bucket.y){
 			playerImage = new TextureRegion(bucketImage, 100, 100);
 		}
@@ -238,8 +285,10 @@ public class Drop implements Screen {
         int Ypos = (int)camera.position.y;
 
 
+
 		//litterText = "Litter left: " + numberOfTrash;
 		litterText = "Litter left: " +  numberOfTrash;
+		timerText = "Time left: " + String.format("%d",(long)time);
 		inventoryText = " " + currentInventory + "/" + inventorySize;
 		scoreText = "Score: " + score;
 		if(currentInventory == inventorySize){ inventoryText = " FULL"; }
@@ -284,13 +333,38 @@ public class Drop implements Screen {
 			batch.draw(bagImage, camera.position.x + 300, camera.position.y + 290);
 			font.draw(batch, litterText, camera.position.x - 500, camera.position.y + 330);
 			inventoryFont.draw(batch, inventoryText, camera.position.x + 360, camera.position.y + 325);
-			scoreFont.draw(batch, scoreText, camera.position.x - 50, camera.position.y + 330);
+			scoreFont.draw(batch, scoreText, camera.position.x - 50, camera.position.y + 290);
+			scoreFont.draw(batch, timerText, camera.position.x - 50, camera.position.y + 330);
+			batch.draw(x, camera.position.x + 470, camera.position.y + 260, 100, 100);
+			if(!gameOn){
+				batch.draw(popUP, camera.position.x - 356.25f, camera.position.y - 225.75f, popUP.getWidth() * 1.5f, popUP.getHeight() * 1.5f);
+				float percent = ((float)score/(float)totalScore) * 100;
+				if(win){
+					batch.draw(winText, camera.position.x - 295, camera.position.y + 100, winText.getWidth(), winText.getHeight());
+					batch.draw(retry, camera.position.x - 280, camera.position.y - 170);
+					batch.draw(menu, camera.position.x + 80, camera.position.y - 170);
+					batch.draw(continuee, camera.position.x - 175, camera.position.y - 90, continuee.getWidth() * 1.1f, continuee.getHeight() * 1.1f);
+					timerText = "Time left: " + String.format("%d",(long)time);
+					scoreText = "Score achieved: " + score + "/" + totalScore + "               " + String.format("%d",(long)percent) + "%";
+					scoreFont.draw(batch, timerText, camera.position.x - 250, camera.position.y + 70);
+					font.draw(batch, scoreText, camera.position.x - 250, camera.position.y + 30);
+				}
+				if(!win){
+					batch.draw(failText, camera.position.x - 285, camera.position.y + 100, winText.getWidth(), winText.getHeight());
+					batch.draw(retry, camera.position.x - 280, camera.position.y - 170);
+					batch.draw(menu, camera.position.x + 80, camera.position.y - 170);
+					litterText = "Litter missed: " +  (numberOfTrash + currentInventory);
+					scoreText = "Score achieved: " + score + "/" + totalScore + "               " + String.format("%d",(long)percent) + "%";
+					font.draw(batch, litterText, camera.position.x - 250, camera.position.y + 50);
+					font.draw(batch, scoreText, camera.position.x - 250, camera.position.y);
+				}
+			}
 			//KONEC RISANJA NA ZASLON
         batch.end();
         stage.act(Gdx.graphics.getDeltaTime());
         stage.draw();
 
-		if(wait <= 0) {
+		if(wait <= 0 && gameOn) {
 			bucket.setX(bucket.getX() + touchpad.getKnobPercentX() * speed);
 			bucket.setY(bucket.getY() + touchpad.getKnobPercentY() * speed);
 			if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
@@ -308,49 +382,103 @@ public class Drop implements Screen {
 				bucket.y -= 66 * speed * Gdx.graphics.getDeltaTime();
 			}
 		}
+		if(gameOn) {
+			if (bucket.y < 105) bucket.y = 105;
+			if (bucket.y > 1815) bucket.y = 1815;
+			if (bucket.x < 60) bucket.x = 60;
+			if (bucket.x > 3950) bucket.x = 3950;
 
-		if(bucket.y < 105) bucket.y = 105;
-		if(bucket.y > 1815 ) bucket.y = 1815;
-        if(bucket.x < 60) bucket.x = 60;
-        if(bucket.x > 3950 ) bucket.x = 3950;
+			//Onemogočitev zaletavanja v drevo
+			if (tree1.overlaps(bucket) || tree2.overlaps(bucket) || tree3.overlaps(bucket)) {
+				bucket.x = oldX;
+				bucket.y = oldY;
+			}
 
-		//Onemogočitev zaletavanja v drevo
-		if(bucket.x > 1810 && bucket.x < 2005 && bucket.y < 1247 && bucket.y > 1115){
-			bucket.x = oldX;
-			bucket.y = oldY;
+			//if(bucket.x > 1810 && bucket.x < 2005 && bucket.y < 1247 && bucket.y > 1115){
+			//	bucket.x = oldX;
+			//	bucket.y = oldY;
+			//}
+			//if(bucket.x > 1375 && bucket.x < 1571 && bucket.y < 609 && bucket.y > 450){
+			//	bucket.x = oldX;
+			//	bucket.y = oldY;
+			//}
+			//if(bucket.x > 3386 && bucket.x < 3572 && bucket.y < 1560 && bucket.y > 1401){
+			//	bucket.x = oldX;
+			//	bucket.y = oldY;
+			//}
+
+
+			Iterator<Trash> iter = vseSmeti.iterator();
+			while (iter.hasNext()) {
+				Trash trash = iter.next();
+				if (trash.getSmet().overlaps(bucket)) {
+					if (currentInventory + trash.getWeight() <= inventorySize) {
+						Inventory.add(trash);
+						currentInventory = currentInventory + trash.getWeight();
+						dropSound.play();
+						iter.remove();
+						numberOfTrash--;
+					}
+				}
+			}
+
+			dajVKos(0, TrashType.METAL, booleanBins[0]);
+			dajVKos(1, TrashType.GLASS, booleanBins[1]);
+			dajVKos(2, TrashType.PAPER, booleanBins[2]);
+			dajVKos(3, TrashType.PLASTIC, booleanBins[3]);
+			dajVKos(4, TrashType.ALL, true);
+
+			wait--;
 		}
-		if(bucket.x > 1375 && bucket.x < 1571 && bucket.y < 609 && bucket.y > 450){
-			bucket.x = oldX;
-			bucket.y = oldY;
-		}
-		if(bucket.x > 3386 && bucket.x < 3572 && bucket.y < 1560 && bucket.y > 1401){
-			bucket.x = oldX;
-			bucket.y = oldY;
-		}
 
-
-		Iterator<Trash> iter = vseSmeti.iterator();
-		while(iter.hasNext()) {
-			Trash trash = iter.next();
-			if(trash.getSmet().overlaps(bucket)) {
-				if(currentInventory + trash.getWeight() <= inventorySize) {
-					Inventory.add(trash);
-					currentInventory = currentInventory + trash.getWeight();
-					dropSound.play();
-					iter.remove();
-					numberOfTrash--;
+		// ITERAKCIJE Z ZASLONOM /////////////////////////////////////////////////
+		if(!gameOn){
+			if(Gdx.input.isTouched() && !win){
+				Vector3 tmp=new Vector3(Gdx.input.getX(),Gdx.input.getY(), 0);
+				camera.unproject(tmp);
+				Rectangle resetBounds=new Rectangle(camera.position.x - 280,camera.position.y - 170, 181, 84);
+				Rectangle menuBounds=new Rectangle(camera.position.x + 80,camera.position.y - 170, 176,77);
+				if(resetBounds.contains(tmp.x,tmp.y))
+				{
+					game.setScreen(new Drop(game));
+					dispose();
+				}
+				if(menuBounds.contains(tmp.x, tmp.y)){
+					dispose();
+					game.setScreen(new MainMenuScreen(game));
+				}
+			}
+			if(Gdx.input.isTouched() && win){
+				Vector3 tmp=new Vector3(Gdx.input.getX(),Gdx.input.getY(), 0);
+				camera.unproject(tmp);
+				Rectangle resetBounds=new Rectangle(camera.position.x - 280,camera.position.y - 170, 181, 84);
+				Rectangle menuBounds=new Rectangle(camera.position.x + 80,camera.position.y - 170, 176,77);
+				Rectangle continueBounds=new Rectangle(camera.position.x - 175,camera.position.y - 80, 379,85);
+				if(resetBounds.contains(tmp.x,tmp.y))
+				{
+					game.setScreen(new Drop(game));
+					dispose();
+				}
+				if(menuBounds.contains(tmp.x, tmp.y)){
+					dispose();
+					game.setScreen(new MainMenuScreen(game));
+				}
+				if(continueBounds.contains(tmp.x, tmp.y)){
+					game.setScreen(new Drop(game));
+					dispose();
 				}
 			}
 		}
-
-		dajVKos(0, TrashType.METAL, booleanBins[0]);
-		dajVKos(1, TrashType.GLASS, booleanBins[1]);
-		dajVKos(2, TrashType.PAPER, booleanBins[2]);
-		dajVKos(3, TrashType.PLASTIC, booleanBins[3]);
-		dajVKos(4, TrashType.ALL, true);
-
-		wait--;
-
+		if(Gdx.input.isTouched() && gameOn) {
+			Vector3 tmp = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+			camera.unproject(tmp);
+			Rectangle xBounds = new Rectangle(camera.position.x + 470, camera.position.y + 260, 100, 100);
+			if (xBounds.contains(tmp.x, tmp.y)) {
+				dispose();
+				game.setScreen(new MainMenuScreen(game));
+			}
+		}
+		// //////////////////////////////////////////////////////////7
 	}
 	
 	@Override
@@ -370,6 +498,15 @@ public class Drop implements Screen {
 		paperSound.dispose();
 		glassSound.dispose();
 		background.dispose();
+		bagImage.dispose();
+		popUP.dispose();
+		failText.dispose();
+		winText.dispose();
+		retry.dispose();
+		menu.dispose();
+		continuee.dispose();
+		standing.dispose();
+		x.dispose();
 	}
 
 	private void spawnTrash() {
@@ -390,6 +527,7 @@ public class Drop implements Screen {
 		smet.width = nov.width;
 		smet.height = nov.height;
 		nov.setSmet(smet);
+		totalScore = nov.getValue() + totalScore;
 		vseSmeti.add(nov);
 	}
 
@@ -459,39 +597,39 @@ public class Drop implements Screen {
 		tree3 = new Rectangle();
 		tree1.x = 1870;
 		tree1.y = 1170;
-		tree1.width = 166;
-		tree1.height = 237;
+		tree1.width = 130;
+		tree1.height = 130;
 		tree2.x = 1430;
 		tree2.y = 520;
-		tree2.width = 166;
-		tree2.height = 237;
+		tree2.width = 130;
+		tree2.height = 130;
 		tree3.x = 3440;
 		tree3.y = 1480;
-		tree3.width = 166;
-		tree3.height = 237;
+		tree3.width = 130;
+		tree3.height = 130;
 	}
 
 	private void dajVKos(int b, TrashType t, boolean isFull){
 		zvok = false;
 		if(bucket.overlaps(bins.get(b)) && !isFull && !reciklira){
 			reciklira = true;
-			for (int i=0; i<Inventory.size; i++) {
+			for (int i=Inventory.size-1; i>=0; i--) {
 				if (Inventory.get(i).getType() == t) {
 					score = score + Inventory.get(i).getValue();
 					currentInventory = currentInventory - Inventory.get(i).getWeight();
 					Inventory.removeIndex(i);
 					zvok = true;
-					wait = 40;
+					wait = 20;
 				}
 			}
 		}
 		if(bucket.overlaps(bins.get(b)) && b == 4 && !reciklira){
-			if(Inventory.size > 0) {
+			if(currentInventory > 0) {
 				zvok = true;
 				reciklira = true;
 				wait = 40;
 			}
-			for (int i=0; i<Inventory.size; i++) {
+			for (int i=Inventory.size-1; i>=0; i--) {
 				score = score + Inventory.get(i).getValue() / 2;
 				currentInventory = currentInventory - Inventory.get(i).getWeight();
 				Inventory.removeIndex(i);
