@@ -1,9 +1,8 @@
 package com.badlogic.drop.desktop;
 
-import com.badlogic.drop.Igra;
+import com.badlogic.drop.Screen;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
-import com.badlogic.drop.Drop;
 
 public class DesktopLauncher {
 	public static void main (String[] arg) {
@@ -12,6 +11,6 @@ public class DesktopLauncher {
         config.width = 800;
         config.height = 480;
 		config.useGL30 = true;
-		new LwjglApplication(new Igra(), config);
+		new LwjglApplication(new Screen(), config);
 	}
 }

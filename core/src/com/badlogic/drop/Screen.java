@@ -8,7 +8,7 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
 
-public class Igra extends Game {
+public class Screen extends Game {
 
     public SpriteBatch batch;
     public BitmapFont font;

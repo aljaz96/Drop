@@ -1,51 +1,32 @@
 package com.badlogic.drop;
 
-import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
-import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.Dialog;
-import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.List;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Touchpad;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
-import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
-import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.TimeUtils;
-import com.badlogic.gdx.utils.Timer;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import com.badlogic.gdx.scenes.scene2d.ui.Dialog;
 
-import java.security.SecureRandom;
 import java.util.Iterator;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
-public class Drop implements Screen {
+public class Game implements com.badlogic.gdx.Screen {
 
-	final Igra game;
+	final Screen game;
 	//////////// TEXTURE   ////////////
 	private Texture trashImage;
 	private Texture bucketImage;
@@ -94,7 +75,7 @@ public class Drop implements Screen {
 	/////////////////////////////////
 	//INVENTORY  ///////////////////
 	private Array<Trash> Inventory;
-	private int inventorySize = 10;
+	private int inventorySize;
 	private int currentInventory = 0;
 	private int score = 0;
 
@@ -135,14 +116,20 @@ public class Drop implements Screen {
 	private boolean playerDirection = true;
 	private float stateTime;
 
-	float time = 120;
+	float time;
 	boolean gameOn;
 	boolean win;
     //// MY CLASSES
     Ozadje ozadje;
+	DataAll all;
 
-	public Drop(final Igra gam) {
+	public Game(final Screen gam) {
 		this.game = gam;
+		all = SaveLoad.loadState();
+		time = all.getTime();
+		inventorySize = all.getInventorySpace();
+		speed = all.getSpeed() * 5;
+
 		gameOn = true;
 		win = false;
 		rand = new Random();
@@ -202,10 +189,9 @@ public class Drop implements Screen {
 		//////////// MOJE
 		stateTime = 0f;
 		reciklira = false;
-		speed = 8;
         counter = 0;
 		//ŠTEVILO ODPADKOV
-		numberOfTrash = 25;
+		numberOfTrash = 4;
 		//////////////////
 		font.getData().setScale(1.5f,1.5f);
 		inventoryFont.getData().setScale(1.5f, 1.5f);
@@ -440,7 +426,7 @@ public class Drop implements Screen {
 				Rectangle menuBounds=new Rectangle(camera.position.x + 80,camera.position.y - 170, 176,77);
 				if(resetBounds.contains(tmp.x,tmp.y))
 				{
-					game.setScreen(new Drop(game));
+					game.setScreen(new Game(game));
 					dispose();
 				}
 				if(menuBounds.contains(tmp.x, tmp.y)){
@@ -449,6 +435,7 @@ public class Drop implements Screen {
 				}
 			}
 			if(Gdx.input.isTouched() && win){
+				all.setGold(score + all.getGold());
 				Vector3 tmp=new Vector3(Gdx.input.getX(),Gdx.input.getY(), 0);
 				camera.unproject(tmp);
 				Rectangle resetBounds=new Rectangle(camera.position.x - 280,camera.position.y - 170, 181, 84);
@@ -456,15 +443,21 @@ public class Drop implements Screen {
 				Rectangle continueBounds=new Rectangle(camera.position.x - 175,camera.position.y - 80, 379,85);
 				if(resetBounds.contains(tmp.x,tmp.y))
 				{
-					game.setScreen(new Drop(game));
+					game.setScreen(new Game(game));
 					dispose();
 				}
-				if(menuBounds.contains(tmp.x, tmp.y)){
+				if(menuBounds.contains(tmp.x, tmp.y))
+				{
+					all.setLvl(all.getLvl() + 1);
+					SaveLoad.saveState(all);
 					dispose();
 					game.setScreen(new MainMenuScreen(game));
 				}
-				if(continueBounds.contains(tmp.x, tmp.y)){
-					game.setScreen(new Drop(game));
+				if(continueBounds.contains(tmp.x, tmp.y))
+				{
+					all.setLvl(all.getLvl() + 1);
+					SaveLoad.saveState(all);
+					game.setScreen(new Game(game));
 					dispose();
 				}
 			}

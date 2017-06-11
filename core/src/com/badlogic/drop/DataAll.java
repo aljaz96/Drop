@@ -11,23 +11,23 @@ public class DataAll {
     int lvl;
     float speed;
     int inventorySpace;
+    int time;
     int gold;
-    ArrayList<Level> completedLvls;
 
     public DataAll(){
         this.lvl = 0;
         this.speed = 0;
         this.inventorySpace = 0;
         this.gold = 0;
-        this.completedLvls = new ArrayList<Level>();
+        time = 120;
     }
 
-    public DataAll(int lvl, int speed, int inventorySpace, int gold) {
+    public DataAll(int lvl, int speed, int inventorySpace, int gold, int timer) {
         this.lvl = lvl;
         this.speed = speed;
         this.inventorySpace = inventorySpace;
         this.gold = gold;
-        this.completedLvls = new ArrayList<Level>();
+        this.time = timer;
     }
 
     public int getLvl() {
@@ -46,6 +46,14 @@ public class DataAll {
         this.speed = speed;
     }
 
+    public int getTime() {
+        return time;
+    }
+
+    public void setTime(int time) {
+        this.time = time;
+    }
+
     public int getInventorySpace() {
         return inventorySpace;
     }
@@ -62,20 +70,8 @@ public class DataAll {
         this.gold = gold;
     }
 
-    public ArrayList<Level> getCompletedLvls() {
-        return completedLvls;
-    }
-
-    public void setCompletedLvls(ArrayList<Level> completedLvls) {
-        this.completedLvls = completedLvls;
-    }
-
-    public void addLevel(Level l){
-        this.completedLvls.add(completedLvls.size(), l);
-    }
-
-    public DataAll scenarijA(){
-        DataAll a = new DataAll(1, 1, 8, 0);
+    public static DataAll scenarijA(){
+        DataAll a = new DataAll(1, 1, 8, 0, 120);
         return a;
     }
 }

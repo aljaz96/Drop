@@ -1,7 +1,6 @@
 package com.badlogic.drop;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -13,15 +12,12 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.Event;
 import com.badlogic.gdx.scenes.scene2d.EventListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.Button;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
-import com.badlogic.gdx.utils.Json;
-import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
-public class MainMenuScreen implements Screen {
+public class MainMenuScreen implements com.badlogic.gdx.Screen {
 
-    final Igra game;
+    final Screen game;
     OrthographicCamera camera;
     public Animation<TextureRegion> runningAnimation;
     Texture walk;
@@ -56,9 +52,10 @@ public class MainMenuScreen implements Screen {
     float stateTime;
     DataAll all;
 
-    public MainMenuScreen(final Igra game) {
+    public MainMenuScreen(final Screen game) {
 
         this.game = game;
+
         music = Gdx.audio.newMusic(Gdx.files.internal("menuTheme.mp3"));
         background = new Texture(Gdx.files.internal("Test.png"));
         name = new Texture(Gdx.files.internal("name.png"));
@@ -77,11 +74,17 @@ public class MainMenuScreen implements Screen {
             @Override
             public boolean handle(Event event)
             {
-                game.setScreen(new Drop(game));
+                game.setScreen(new Game(game));
                 dispose();
                 return true;
             }
         });
+
+        all = SaveLoad.loadState();
+        //System.out.println(all.getGold());
+
+
+
 
        // game.stage = new Stage(new ScreenViewport());
        // game.stage.addActor(playButton);
@@ -102,10 +105,6 @@ public class MainMenuScreen implements Screen {
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 800, 480);
         stateTime = 0f;
-
-        Json json = new Json();
-        String text = json.toJson(all);
-        DataAll dataall = json.fromJson(DataAll.class, text);
 
        // if(dataall.getLvl() == 0){
        //     dataall.scenarijA();
@@ -151,7 +150,7 @@ public class MainMenuScreen implements Screen {
             Rectangle resetBounds=new Rectangle(330,200,playWidth,playHeight);
             if(playBounds.contains(tmp.x,tmp.y))
             {
-                game.setScreen(new Drop(game));
+                game.setScreen(new Game(game));
                 dispose();
             }
             if(exitBounds.contains(tmp.x, tmp.y)){
@@ -172,7 +171,7 @@ public class MainMenuScreen implements Screen {
         counter++;
 
        // if (Gdx.input.isTouched()) {
-        //    game.setScreen(new Drop(game));
+        //    game.setScreen(new Game(game));
         //    dispose();
        // }
     }
