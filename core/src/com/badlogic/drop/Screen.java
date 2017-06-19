@@ -11,6 +11,7 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 public class Screen extends Game {
 
     public SpriteBatch batch;
+    public SpriteBatch batchOptions;
     public BitmapFont font;
     public Stage stage;
 
@@ -18,6 +19,7 @@ public class Screen extends Game {
         stage = new Stage();
         Gdx.input.setInputProcessor(stage);
         batch = new SpriteBatch();
+        batchOptions = new SpriteBatch();
         //Use LibGDX's default Arial font.
         font = new BitmapFont();
         this.setScreen(new MainMenuScreen(this));
@@ -30,6 +32,7 @@ public class Screen extends Game {
 
     public void dispose() {
         batch.dispose();
+        batchOptions.dispose();
         font.dispose();
     }
 

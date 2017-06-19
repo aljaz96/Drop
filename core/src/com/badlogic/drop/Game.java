@@ -128,7 +128,7 @@ public class Game implements com.badlogic.gdx.Screen {
 		all = SaveLoad.loadState();
 		time = all.getTime();
 		inventorySize = all.getInventorySpace();
-		speed = all.getSpeed() * 5;
+		speed = all.getSpeed() * 6;
 
 		gameOn = true;
 		win = false;
@@ -191,7 +191,7 @@ public class Game implements com.badlogic.gdx.Screen {
 		reciklira = false;
         counter = 0;
 		//ŠTEVILO ODPADKOV
-		numberOfTrash = 4;
+		numberOfTrash = 3 + all.getLvl() + (int)(all.getLvl() / 3);
 		//////////////////
 		font.getData().setScale(1.5f,1.5f);
 		inventoryFont.getData().setScale(1.5f, 1.5f);
@@ -435,7 +435,6 @@ public class Game implements com.badlogic.gdx.Screen {
 				}
 			}
 			if(Gdx.input.isTouched() && win){
-				all.setGold(score + all.getGold());
 				Vector3 tmp=new Vector3(Gdx.input.getX(),Gdx.input.getY(), 0);
 				camera.unproject(tmp);
 				Rectangle resetBounds=new Rectangle(camera.position.x - 280,camera.position.y - 170, 181, 84);
@@ -449,6 +448,7 @@ public class Game implements com.badlogic.gdx.Screen {
 				if(menuBounds.contains(tmp.x, tmp.y))
 				{
 					all.setLvl(all.getLvl() + 1);
+					all.setGold(all.getGold() + score);
 					SaveLoad.saveState(all);
 					dispose();
 					game.setScreen(new MainMenuScreen(game));
@@ -456,6 +456,7 @@ public class Game implements com.badlogic.gdx.Screen {
 				if(continueBounds.contains(tmp.x, tmp.y))
 				{
 					all.setLvl(all.getLvl() + 1);
+					all.setGold(all.getGold() + score);
 					SaveLoad.saveState(all);
 					game.setScreen(new Game(game));
 					dispose();

@@ -71,7 +71,7 @@ public class DataAll {
     }
 
     public static DataAll scenarijA(){
-        DataAll a = new DataAll(1, 1, 8, 0, 120);
+        DataAll a = new DataAll(1, 1, 6, 0, 90);
         return a;
     }
 }
