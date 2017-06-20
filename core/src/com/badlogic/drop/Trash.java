@@ -1,6 +1,7 @@
 package com.badlogic.drop;
 
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.graphics.Texture;
 
 /**
  * Created by mikik on 17. 05. 2017.
@@ -14,12 +15,16 @@ public class Trash{
     int value;
     String img;
     TrashType type;
-
+    Texture text;
     Rectangle smet;
 
     Trash create_clone(){
-        return new Trash(width,height,name,value,weight,img,type,smet);
+        return new Trash(width,height,name,value,weight,img,type,smet,text);
     };
+
+    void odstrani(){
+        text.dispose();
+    }
 
     Trash(int x, int y, String n, int v, int w, String i ,TrashType t){
         width = x;
@@ -31,7 +36,7 @@ public class Trash{
         type = t;
     }
 
-    Trash(int x, int y, String n, int v, int w, String i ,TrashType t, Rectangle r){
+    Trash(int x, int y, String n, int v, int w, String i ,TrashType t, Rectangle r, Texture te){
         width = x;
         height = y;
         name = n;
@@ -40,6 +45,15 @@ public class Trash{
         img = i;
         type = t;
         smet = r;
+        text = te;
+    }
+
+    public Texture getText() {
+        return text;
+    }
+
+    public void setText(Texture text) {
+        this.text = text;
     }
 
     public int getWidth() {

@@ -34,6 +34,7 @@ public class Screen extends Game {
         batch.dispose();
         batchOptions.dispose();
         font.dispose();
+        stage.dispose();
     }
 
 }

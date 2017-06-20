@@ -13,7 +13,6 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.Event;
 import com.badlogic.gdx.scenes.scene2d.EventListener;
-import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 
@@ -60,7 +59,6 @@ public class MainMenuScreen implements com.badlogic.gdx.Screen {
 
     int counter = 0;
 
-    Stage stage;
     TextureRegion currentFrame;
     Music music;
     float stateTime;
@@ -127,9 +125,6 @@ public class MainMenuScreen implements com.badlogic.gdx.Screen {
 
 
 
-
-       // game.stage = new Stage(new ScreenViewport());
-       // game.stage.addActor(playButton);
         Gdx.input.setInputProcessor(game.stage);
 
         TextureRegion[][] tmp = TextureRegion.split(walk,
@@ -210,7 +205,7 @@ public class MainMenuScreen implements com.badlogic.gdx.Screen {
 
                 String bagString = all.getInventorySpace() + "       " + ((all.getInventorySpace() - 5) * 400) + "$";
                 String speedString = mySpeed + "       " + value + "$";
-                String timeString = all.getTime() + "       " + ((all.getTime() - 80) * 100) + "$";
+                String timeString = all.getTime() + "       " + ((all.getTime() - 89) * 50) + "$";
                 String moneyString = all.getGold() + "$ ";
                 game.batchOptions.draw(popUP, camera.position.x - 360f, camera.position.y - 180, popUP.getWidth() * 1.5f, popUP.getHeight() * 1.2f);
                 game.batchOptions.draw(x, camera.position.x + 240f, camera.position.y + 90);
@@ -226,9 +221,35 @@ public class MainMenuScreen implements com.badlogic.gdx.Screen {
                 font.draw(game.batchOptions, speedString, camera.position.x , camera.position.y - 32);
                 font.draw(game.batchOptions, timeString, camera.position.x - 30, camera.position.y - 95);
             }
+            if(statsScreen){
+                float mySpeed = all.getSpeed();
+                mySpeed = Math.round(mySpeed * 100);
+                mySpeed = mySpeed / 100;
+                String lvl = "Level: " + all.getLvl();
+                String money = "Money: " + all.getGold() + "$";
+                String inv = "Bag size: " + all.getInventorySpace();
+                String speed = "Speed: " + mySpeed;
+                String timer = "Timer length: " + all.getTime() + "s";
+                String completedLvls = "Games played: " + all.getGamesPlayed();
+                String gamesFailed = "Games failed: " + all.getGamesFailed();
+                String gamesAborted = "Games canceled: " + all.getGamesAborted();
+                String totalPickups = "Litter picked up: " + all.getTotalTrashPickups();
+                game.batchOptions.draw(popUP, camera.position.x - 300f, camera.position.y - 180, popUP.getWidth() * 1.2f, popUP.getHeight() * 1.2f);
+                game.batchOptions.draw(stats, camera.position.x - 120f, camera.position.y + 70, stats.getWidth(), stats.getHeight());
+                game.batchOptions.draw(x, camera.position.x + 170f, camera.position.y + 90);
+                font.draw(game.batchOptions, lvl, camera.position.x - 210, camera.position.y + 50);
+                font.draw(game.batchOptions, money, camera.position.x - 210, camera.position.y + 10);
+                font.draw(game.batchOptions, inv, camera.position.x - 210, camera.position.y  - 30);
+                font.draw(game.batchOptions, speed, camera.position.x - 210, camera.position.y - 70);
+                font.draw(game.batchOptions, timer, camera.position.x - 210, camera.position.y - 110);
+                font.draw(game.batchOptions, completedLvls, camera.position.x - 10, camera.position.y + 50);
+                font.draw(game.batchOptions, gamesFailed, camera.position.x - 10, camera.position.y + 10);
+                font.draw(game.batchOptions, gamesAborted, camera.position.x - 10, camera.position.y - 30);
+                font.draw(game.batchOptions, totalPickups, camera.position.x - 10, camera.position.y - 70);
+            }
         game.batchOptions.end();
 
-
+        ////////////////////////////////////////////// MENU //////////////////////////////////////////
         if(Gdx.input.justTouched() && menuScreen == true){
             Vector3 tmp=new Vector3(Gdx.input.getX(),Gdx.input.getY(), 0);
             camera.unproject(tmp);
@@ -259,10 +280,12 @@ public class MainMenuScreen implements com.badlogic.gdx.Screen {
                 menuScreen = false;
             }
             if(statsBounds.contains(tmp.x, tmp.y)){
+                statsScreen = true;
                 useGrayScale = !useGrayScale;
+                menuScreen = false;
             }
         }
-
+        ///////////////////////////////////////// RESET ///////////////////////////////////////////////
         if(resetScreen == true){
             if(Gdx.input.justTouched()){
                 Vector3 tmp=new Vector3(Gdx.input.getX(),Gdx.input.getY(), 0);
@@ -284,15 +307,15 @@ public class MainMenuScreen implements com.badlogic.gdx.Screen {
                 }
             }
         }
-
+        ///////////////////////////////////////// SHOP ////////////////////////////////////////////////
         if(shopScreen){
             if(Gdx.input.justTouched()){
                 Vector3 tmp=new Vector3(Gdx.input.getX(),Gdx.input.getY(), 0);
                 camera.unproject(tmp);
                 Rectangle exitBounds=new Rectangle(camera.position.x + 240f, camera.position.y + 90,x.getWidth(),x.getHeight());
-                Rectangle bagBounds=new Rectangle(camera.position.x - 300f, camera.position.y,plus.getWidth(),plus.getHeight());
-                Rectangle speedBounds=new Rectangle(camera.position.x - 300f, camera.position.y - 60,plus.getWidth(),plus.getHeight());
-                Rectangle timeBounds=new Rectangle(camera.position.x - 300f, camera.position.y - 120,plus.getWidth(),plus.getHeight());
+                Rectangle bagBounds=new Rectangle(camera.position.x + 200f, camera.position.y,plus.getWidth() - 10,plus.getHeight()  - 30);
+                Rectangle speedBounds=new Rectangle(camera.position.x + 200f, camera.position.y - 60,plus.getWidth() - 10,plus.getHeight()  - 30);
+                Rectangle timeBounds=new Rectangle(camera.position.x + 200f, camera.position.y - 120,plus.getWidth()  - 10,plus.getHeight()  - 30);
                 if(exitBounds.contains(tmp.x,tmp.y))
                 {
                     shopScreen = false;
@@ -320,8 +343,8 @@ public class MainMenuScreen implements com.badlogic.gdx.Screen {
                     }
                 }
                 if(timeBounds.contains(tmp.x, tmp.y)){
-                    if(all.getGold() >= ((all.getTime() - 80) * 100)) {
-                        all.setGold(all.getGold() - ((all.getTime() - 80) * 100));
+                    if(all.getGold() >= ((all.getTime() - 89) * 50)) {
+                        all.setGold(all.getGold() - ((all.getTime() - 89) * 50));
                         all.setTime(all.getTime() + 1);
                         SaveLoad.saveState(all);
                         all = SaveLoad.loadState();
@@ -329,7 +352,19 @@ public class MainMenuScreen implements com.badlogic.gdx.Screen {
                 }
             }
         }
-
+        if(statsScreen) {
+            if (Gdx.input.justTouched()) {
+                Vector3 tmp=new Vector3(Gdx.input.getX(),Gdx.input.getY(), 0);
+                camera.unproject(tmp);
+                Rectangle exitBounds=new Rectangle(camera.position.x + 170f, camera.position.y + 90,x.getWidth(),x.getHeight());
+                if(exitBounds.contains(tmp.x,tmp.y))
+                {
+                    statsScreen = false;
+                    menuScreen = true;
+                    useGrayScale = !useGrayScale;
+                }
+            }
+        }
         if(counter == 80){
             counter = 0;
         }
@@ -348,22 +383,30 @@ public class MainMenuScreen implements com.badlogic.gdx.Screen {
     }
 
     public void dispose () {
-        walk.dispose();
         music.dispose();
         background.dispose();
         name.dispose();
         bin.dispose();
+        walk.dispose();
+        play.dispose();
+        shop.dispose();
+        stats.dispose();
+        reset.dispose();
+        exit.dispose();
         popUP.dispose();
+        resetWarning.dispose();
+        resetProgress.dispose();
         yes.dispose();
         no.dispose();
-        resetProgress.dispose();
-        resetWarning.dispose();
         x.dispose();
         increaseBagSize.dispose();
         increaseSpeed.dispose();
         increaseTimer.dispose();
         money.dispose();
         plus.dispose();
+        font.dispose();
+        shaderProgram.dispose();
+        blurProgram.dispose();
 //        game.stage.dispose();
     }
 

@@ -28,7 +28,6 @@ public class Game implements com.badlogic.gdx.Screen {
 
 	final Screen game;
 	//////////// TEXTURE   ////////////
-	private Texture trashImage;
 	private Texture bucketImage;
     private Texture background;
     private Texture blueBin;
@@ -115,6 +114,7 @@ public class Game implements com.badlogic.gdx.Screen {
 	private boolean reciklira;
 	private boolean playerDirection = true;
 	private float stateTime;
+	private int totalTrash;
 
 	float time;
 	boolean gameOn;
@@ -128,7 +128,7 @@ public class Game implements com.badlogic.gdx.Screen {
 		all = SaveLoad.loadState();
 		time = all.getTime();
 		inventorySize = all.getInventorySpace();
-		speed = all.getSpeed() * 6;
+		speed = all.getSpeed() * 5;
 
 		gameOn = true;
 		win = false;
@@ -191,7 +191,7 @@ public class Game implements com.badlogic.gdx.Screen {
 		reciklira = false;
         counter = 0;
 		//ŠTEVILO ODPADKOV
-		numberOfTrash = 3 + all.getLvl() + (int)(all.getLvl() / 3);
+		totalTrash = numberOfTrash = 3 + all.getLvl() + (int)(all.getLvl() / 3);
 		//////////////////
 		font.getData().setScale(1.5f,1.5f);
 		inventoryFont.getData().setScale(1.5f, 1.5f);
@@ -305,8 +305,7 @@ public class Game implements com.badlogic.gdx.Screen {
 			batch.draw(basicBin, bins.get(4).x, bins.get(4).y);
 			//SMETI
 			for(Trash t: vseSmeti) {
-				trashImage = new Texture(Gdx.files.internal(t.getImg()));
-				batch.draw(trashImage, t.getSmet().x, t.getSmet().y);
+				batch.draw(t.getText(), t.getSmet().x, t.getSmet().y);
 			}
 			//IGRALEC
 			batch.draw(playerImage, playerDirection ? bucket.x+100 : bucket.x, bucket.y, playerDirection ? -100 : 100, 100);
@@ -339,7 +338,7 @@ public class Game implements com.badlogic.gdx.Screen {
 					batch.draw(failText, camera.position.x - 285, camera.position.y + 100, winText.getWidth(), winText.getHeight());
 					batch.draw(retry, camera.position.x - 280, camera.position.y - 170);
 					batch.draw(menu, camera.position.x + 80, camera.position.y - 170);
-					litterText = "Litter missed: " +  (numberOfTrash + currentInventory);
+					litterText = "Litter missed: " +  (numberOfTrash + Inventory.size);
 					scoreText = "Score achieved: " + score + "/" + totalScore + "               " + String.format("%d",(long)percent) + "%";
 					font.draw(batch, litterText, camera.position.x - 250, camera.position.y + 50);
 					font.draw(batch, scoreText, camera.position.x - 250, camera.position.y);
@@ -402,6 +401,7 @@ public class Game implements com.badlogic.gdx.Screen {
 						Inventory.add(trash);
 						currentInventory = currentInventory + trash.getWeight();
 						dropSound.play();
+						trash.odstrani();
 						iter.remove();
 						numberOfTrash--;
 					}
@@ -426,10 +426,18 @@ public class Game implements com.badlogic.gdx.Screen {
 				Rectangle menuBounds=new Rectangle(camera.position.x + 80,camera.position.y - 170, 176,77);
 				if(resetBounds.contains(tmp.x,tmp.y))
 				{
-					game.setScreen(new Game(game));
+					all.setTotalTrashPickups(all.getTotalTrashPickups() + totalTrash - numberOfTrash);
+					all.setGamesPlayed(all.getGamesPlayed() + 1);
+					all.setGamesFailed(all.getGamesFailed() + 1);
+					SaveLoad.saveState(all);
 					dispose();
+					game.setScreen(new Game(game));
 				}
 				if(menuBounds.contains(tmp.x, tmp.y)){
+					all.setTotalTrashPickups(all.getTotalTrashPickups() + totalTrash - numberOfTrash);
+					all.setGamesPlayed(all.getGamesPlayed() + 1);
+					all.setGamesFailed(all.getGamesFailed() + 1);
+					SaveLoad.saveState(all);
 					dispose();
 					game.setScreen(new MainMenuScreen(game));
 				}
@@ -442,11 +450,16 @@ public class Game implements com.badlogic.gdx.Screen {
 				Rectangle continueBounds=new Rectangle(camera.position.x - 175,camera.position.y - 80, 379,85);
 				if(resetBounds.contains(tmp.x,tmp.y))
 				{
-					game.setScreen(new Game(game));
+					all.setGamesPlayed(all.getGamesPlayed() + 1);
+					all.setTotalTrashPickups(all.getTotalTrashPickups() + totalTrash);
+					SaveLoad.saveState(all);
 					dispose();
+					game.setScreen(new Game(game));
 				}
 				if(menuBounds.contains(tmp.x, tmp.y))
 				{
+					all.setGamesPlayed(all.getGamesPlayed() + 1);
+					all.setTotalTrashPickups(all.getTotalTrashPickups() + totalTrash);
 					all.setLvl(all.getLvl() + 1);
 					all.setGold(all.getGold() + score);
 					SaveLoad.saveState(all);
@@ -455,11 +468,13 @@ public class Game implements com.badlogic.gdx.Screen {
 				}
 				if(continueBounds.contains(tmp.x, tmp.y))
 				{
+					all.setGamesPlayed(all.getGamesPlayed() + 1);
+					all.setTotalTrashPickups(all.getTotalTrashPickups() + totalTrash);
 					all.setLvl(all.getLvl() + 1);
 					all.setGold(all.getGold() + score);
 					SaveLoad.saveState(all);
-					game.setScreen(new Game(game));
 					dispose();
+					game.setScreen(new Game(game));
 				}
 			}
 		}
@@ -468,6 +483,8 @@ public class Game implements com.badlogic.gdx.Screen {
 			camera.unproject(tmp);
 			Rectangle xBounds = new Rectangle(camera.position.x + 470, camera.position.y + 260, 100, 100);
 			if (xBounds.contains(tmp.x, tmp.y)) {
+				all.setGamesAborted(all.getGamesAborted() + 1);
+				SaveLoad.saveState(all);
 				dispose();
 				game.setScreen(new MainMenuScreen(game));
 			}
@@ -477,7 +494,7 @@ public class Game implements com.badlogic.gdx.Screen {
 	
 	@Override
 	public void dispose () {
-		trashImage.dispose();
+		background.dispose();
 		bucketImage.dispose();
 		dropSound.dispose();
 		music.dispose();
@@ -486,6 +503,7 @@ public class Game implements com.badlogic.gdx.Screen {
 		redBin.dispose();
 		yellowBin.dispose();
 		greenBin.dispose();
+		basicBin.dispose();
 		tree.dispose();
 		metalSound.dispose();
 		plasticSound.dispose();
@@ -501,10 +519,17 @@ public class Game implements com.badlogic.gdx.Screen {
 		continuee.dispose();
 		standing.dispose();
 		x.dispose();
+		font.dispose();
+		inventoryFont.dispose();
+		scoreFont.dispose();
+		timerFont.dispose();
+		touchpadSkin.dispose();
+		stage.dispose();
 	}
 
 	private void spawnTrash() {
 		Trash nov = smeti.get(rand.nextInt(16 - 0) + 0).create_clone();
+		nov.setText(new Texture(Gdx.files.internal(nov.getImg())));
         counter = counter + 1;
 		Rectangle smet = new Rectangle();
 		smet.x = rand.nextInt(3950-200)+200;
@@ -541,10 +566,6 @@ public class Game implements com.badlogic.gdx.Screen {
         stage = new Stage(viewport, batch);
         stage.addActor(touchpad);
         Gdx.input.setInputProcessor(stage);
-    }
-
-    private void ustvariAnimacijo(){
-        walkSheet[0] = new Texture(Gdx.files.internal("animation_sheet.png"));
     }
 
     private void createBins(){
