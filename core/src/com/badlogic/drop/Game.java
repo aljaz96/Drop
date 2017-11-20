@@ -47,7 +47,9 @@ public class Game implements com.badlogic.gdx.Screen {
 	private Texture continuee;
 	private Texture standing;
 	private Texture x;
-    //////////////////////////////////
+    ////////////////VELIKOST//////////////////
+	private int height = 4;
+	private int width = 8;
 	//////// ZVOKI /////////////////
 	private Sound crackSound;
 	private Sound dropSound;
@@ -155,8 +157,21 @@ public class Game implements com.badlogic.gdx.Screen {
 		continuee = new Texture(Gdx.files.internal("continue.png"));
 		standing = new Texture(Gdx.files.internal("Hat_man.png"));
 		x = new Texture(Gdx.files.internal("x.png"));
-		ozadje = new Ozadje();
-		createRegions(ozadje);
+		/////// ZA OZADJA /////////////////////////////////////
+		/////// ZA OZADJA /////////////////////////////////////
+		/////// ZA OZADJA /////////////////////////////////////
+		/////// ZA OZADJA /////////////////////////////////////
+		//ozadje = new Ozadje();
+		//createRegions(ozadje);
+		height = rand.nextInt(13-6) + 6;
+		width = rand.nextInt(13-6) + 6;
+		ozadje = new Ozadje(width,height);
+		CreateCustomRegions(ozadje);
+		/////// ZA OZADJA /////////////////////////////////////
+		/////// ZA OZADJA /////////////////////////////////////
+		/////// ZA OZADJA /////////////////////////////////////
+		/////// ZA OZADJA /////////////////////////////////////
+		/////// ZA OZADJA /////////////////////////////////////
 
 		// load the sound effects and the rain background "music"
 		dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
@@ -230,6 +245,7 @@ public class Game implements com.badlogic.gdx.Screen {
 			spawnTrash();
 		}
 		//DREVESA
+
 		narediDrevesa();
 	}
 
@@ -272,7 +288,7 @@ public class Game implements com.badlogic.gdx.Screen {
 
 
 
-		//litterText = "Litter left: " + numberOfTrash;
+		//litterText ="x: " +  bucket.getX() + " y:" + bucket.getY();
 		litterText = "Litter left: " +  numberOfTrash;
 		timerText = "Time left: " + String.format("%d",(long)time);
 		inventoryText = " " + currentInventory + "/" + inventorySize;
@@ -281,20 +297,21 @@ public class Game implements com.badlogic.gdx.Screen {
 		camera.position.x = bucket.getX() + 64 / 2;
 		camera.position.y = bucket.getY() + 90 / 2;
 		if(camera.position.x < 605){ camera.position.x = 605;}
-		if(camera.position.x > 3480){ camera.position.x = 3480;}
+		if(camera.position.x > (width * 512) - 612){ camera.position.x = (width * 512) - 612;}  //3480
 		if(camera.position.y < 350){ camera.position.y = 350;}
-		if(camera.position.y > 1680){ camera.position.y = 1680;}
+		if(camera.position.y > (height * 512) - 368){ camera.position.y = (height * 512) - 368;} //1680
 		camera.update();
 
         batch.setProjectionMatrix(camera.combined);
 
 		batch.begin();
 		//ZAČETEK RISANJA NA ZASLON:
-            //OZADJE
-            for(int i=0; i<32; i++){
+            //OZADJE		//32 privzeto
+            for(int i=0; i<width * height; i++){
                 if(Ypos + 650 > (ozadje.getyPos(i) + 270) && Ypos - 650 < ozadje.getyPos(i) + 270 &&
                         Xpos + 1200 > (ozadje.getxPos(i) + 580) && Xpos - 600 < ozadje.getxPos(i) + 580) {
-                    batch.draw(ozadje.getXRegion(i), ozadje.getxPos(i), ozadje.getyPos(i));
+					batch.draw(ozadje.getXTexture(i), ozadje.getxPos(i), ozadje.getyPos(i)); //Z TEXTURAMI
+					//batch.draw(ozadje.getXRegion(i), ozadje.getxPos(i), ozadje.getyPos(i)); // Z REGIONS
                 }
             }
 			//KOŠI ZA SMETI
@@ -369,9 +386,9 @@ public class Game implements com.badlogic.gdx.Screen {
 		}
 		if(gameOn) {
 			if (bucket.y < 105) bucket.y = 105;
-			if (bucket.y > 1815) bucket.y = 1815;
+			if (bucket.y > (height * 512) - 233) bucket.y = (height * 512) - 233; //1815
 			if (bucket.x < 60) bucket.x = 60;
-			if (bucket.x > 3950) bucket.x = 3950;
+			if (bucket.x > (width * 512)- 146) bucket.x = (width * 512)- 146; //3950
 
 			//Onemogočitev zaletavanja v drevo
 			if (tree1.overlaps(bucket) || tree2.overlaps(bucket) || tree3.overlaps(bucket)) {
@@ -674,6 +691,77 @@ public class Game implements com.badlogic.gdx.Screen {
 			}
 		}
 		reciklira = false;
+	}
+
+
+	private void CreateCustomRegions(Ozadje o){
+		int x = 0;
+		int y = 0;
+		o.setTexture(0, "background_images/BottomLeft.jpg");
+		o.setxPos(0, x);
+		o.setyPos(0, y);
+		o.setTexture(1, "background_images/TopLeft.jpg");
+		o.setxPos(1, x);
+		o.setyPos(1, (512 * height) - 512);
+		o.setTexture(2, "background_images/BottomRight.jpg");
+		o.setxPos(2, (512 * width) - 512);
+		o.setyPos(2, y);
+		o.setTexture(3, "background_images/TopRight.jpg");
+		o.setxPos(3, (512 * width) - 512);
+		o.setyPos(3, (512 * height) - 512);
+		int ii = 4;
+		x = 512;
+		int r;
+		//Ograja na dnu
+		for(int i = 0; i<width-2; i++){
+			r = rand.nextInt(6-1) + 1;
+			o.setTexture(ii, "background_images/BottomFence" + r + ".jpg");
+			o.setxPos(ii, x);
+			o.setyPos(ii, y);
+			x = x + 512;
+			ii++;
+		}
+		x = 512;
+		for(int i = 0; i<width-2; i++){
+			r = rand.nextInt(6-1) + 1;
+			o.setTexture(ii,"background_images/TopFence" + r + ".jpg");
+			o.setxPos(ii, x);
+			o.setyPos(ii, (512 * height) - 512);
+			x = x + 512;
+			ii++;
+		}
+		x = 0;
+		y = 512;
+		for(int i = 0; i<height-2; i++){
+			r = rand.nextInt(6-1) + 1;
+			o.setTexture(ii, "background_images/LeftFence" + r + ".jpg");
+			o.setxPos(ii, x);
+			o.setyPos(ii, y);
+			y = y + 512;
+			ii++;
+		}
+		y = 512;
+		for(int i = 0; i<height-2; i++){
+			r = rand.nextInt(6-1) + 1;
+			o.setTexture(ii, "background_images/RightFence" + r + ".jpg");
+			o.setxPos(ii,(512 * width) - 512);
+			o.setyPos(ii, y);
+			y = y + 512;
+			ii++;
+		}
+		y = 0;
+		for(int i=0; i<height-2; i++){
+			x = 512;
+			y = y + 512;
+			for(int j=0; j<width-2; j++){
+				r = rand.nextInt(51-1) + 1;
+				o.setTexture(ii, "background_images/Box" + r + ".jpg");
+				o.setxPos(ii, x);
+				o.setyPos(ii, y);
+				x = x + 512;
+				ii++;
+			}
+		}
 	}
 
 	private void createRegions(Ozadje o){
