@@ -155,7 +155,7 @@ public class Game implements com.badlogic.gdx.Screen {
 		menu = new Texture(Gdx.files.internal("menu.png"));
 		retry = new Texture(Gdx.files.internal("retry.png"));
 		continuee = new Texture(Gdx.files.internal("continue.png"));
-		standing = new Texture(Gdx.files.internal("Hat_man.png"));
+		standing = new Texture(Gdx.files.internal("hat_man.png"));
 		x = new Texture(Gdx.files.internal("x.png"));
 		/////// ZA OZADJA /////////////////////////////////////
 		/////// ZA OZADJA /////////////////////////////////////

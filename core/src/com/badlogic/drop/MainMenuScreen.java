@@ -83,7 +83,7 @@ public class MainMenuScreen implements com.badlogic.gdx.Screen {
         background = new Texture(Gdx.files.internal("Test.png"));
         name = new Texture(Gdx.files.internal("name.png"));
         bin = new Texture(Gdx.files.internal("t5.png"));
-        walk = new Texture(Gdx.files.internal("Hat_man.png"));
+        walk = new Texture(Gdx.files.internal("hat_man.png"));
         play = new Texture(Gdx.files.internal("play.png"));
         shop = new Texture(Gdx.files.internal("shop.png"));
         stats = new Texture(Gdx.files.internal("stats.png"));
