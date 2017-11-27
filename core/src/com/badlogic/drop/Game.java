@@ -63,9 +63,7 @@ public class Game implements com.badlogic.gdx.Screen {
     ////////////////////////////////
 	////// RECTANGLI ///////////////
 	private Rectangle bucket;
-	private Rectangle tree1;
-	private Rectangle tree2;
-	private Rectangle tree3;
+	private Rectangle[] trees;
 	private Rectangle bag;
     ////////////////////////////////
 	//POLJA Z SMETMI/KOŠIM/SMETEH NA TLEH
@@ -128,13 +126,28 @@ public class Game implements com.badlogic.gdx.Screen {
 	public Game(final Screen gam) {
 		this.game = gam;
 		all = SaveLoad.loadState();
-		time = all.getTime();
 		inventorySize = all.getInventorySpace();
 		speed = all.getSpeed() * 5;
-
+		rand = new Random();
+		/////// ZA OZADJA /////////////////////////////////////
+		/////// ZA OZADJA /////////////////////////////////////
+		/////// ZA OZADJA /////////////////////////////////////
+		/////// ZA OZADJA /////////////////////////////////////
+		//ozadje = new Ozadje();
+		//createRegions(ozadje);
+		height = rand.nextInt(12-5) + 4;
+		width = rand.nextInt(12-5) + 4;
+		ozadje = new Ozadje(width,height);
+		CreateCustomRegions(ozadje);
+		/////// ZA OZADJA /////////////////////////////////////
+		/////// ZA OZADJA /////////////////////////////////////
+		/////// ZA OZADJA /////////////////////////////////////
+		/////// ZA OZADJA /////////////////////////////////////
+		/////// ZA OZADJA /////////////////////////////////////
+		time = all.getTime() + (all.lvl * 5) + height * width;
+		trees = new Rectangle[height + width + rand.nextInt((height + width) - 1) + 0];//rand.nextInt(13-3) + 3
 		gameOn = true;
 		win = false;
-		rand = new Random();
 		font = new BitmapFont();
 		inventoryFont = new BitmapFont();
 		scoreFont = new BitmapFont();
@@ -157,21 +170,6 @@ public class Game implements com.badlogic.gdx.Screen {
 		continuee = new Texture(Gdx.files.internal("continue.png"));
 		standing = new Texture(Gdx.files.internal("hat_man.png"));
 		x = new Texture(Gdx.files.internal("x.png"));
-		/////// ZA OZADJA /////////////////////////////////////
-		/////// ZA OZADJA /////////////////////////////////////
-		/////// ZA OZADJA /////////////////////////////////////
-		/////// ZA OZADJA /////////////////////////////////////
-		//ozadje = new Ozadje();
-		//createRegions(ozadje);
-		height = rand.nextInt(13-6) + 6;
-		width = rand.nextInt(13-6) + 6;
-		ozadje = new Ozadje(width,height);
-		CreateCustomRegions(ozadje);
-		/////// ZA OZADJA /////////////////////////////////////
-		/////// ZA OZADJA /////////////////////////////////////
-		/////// ZA OZADJA /////////////////////////////////////
-		/////// ZA OZADJA /////////////////////////////////////
-		/////// ZA OZADJA /////////////////////////////////////
 
 		// load the sound effects and the rain background "music"
 		dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
@@ -239,14 +237,13 @@ public class Game implements com.badlogic.gdx.Screen {
 		for(int i=0; i<4; i++){
 			booleanBins[i] = false;
 		}
+		//DREVESA
+		narediDrevesa();
 		createTrash();
 		//spawnRaindrop();
 		for(int i=0; i<numberOfTrash; i++){
 			spawnTrash();
 		}
-		//DREVESA
-
-		narediDrevesa();
 	}
 
 	//dodaj spreminjajoče kante/inventory/nove smeti/ mogoče drevesa/mogoče ozadaje poštimati
@@ -328,9 +325,10 @@ public class Game implements com.badlogic.gdx.Screen {
 			batch.draw(playerImage, playerDirection ? bucket.x+100 : bucket.x, bucket.y, playerDirection ? -100 : 100, 100);
 			//spriteBatch.draw(currentFrame, flip ? x+width : x, y, flip ? -width : width, height);
 			//DREVESA
-			batch.draw(tree, tree1.x, tree1.y);
-			batch.draw(tree, tree2.x, tree2.y);
-			batch.draw(tree, tree3.x, tree3.y);
+			for (Rectangle item:trees) {
+				//batch.draw(tree, item.x, item.y);
+				batch.draw(tree, item.x - 25, item.y - 33);
+			}
 			//BESEDILA
 			batch.draw(bagImage, camera.position.x + 300, camera.position.y + 290);
 			font.draw(batch, litterText, camera.position.x - 500, camera.position.y + 330);
@@ -385,16 +383,19 @@ public class Game implements com.badlogic.gdx.Screen {
 			}
 		}
 		if(gameOn) {
-			if (bucket.y < 105) bucket.y = 105;
-			if (bucket.y > (height * 512) - 233) bucket.y = (height * 512) - 233; //1815
+			if (bucket.y < 130) bucket.y = 130;
+			if (bucket.y > (height * 512) - 200) bucket.y = (height * 512) - 200; //1815, 233
 			if (bucket.x < 60) bucket.x = 60;
 			if (bucket.x > (width * 512)- 146) bucket.x = (width * 512)- 146; //3950
 
 			//Onemogočitev zaletavanja v drevo
-			if (tree1.overlaps(bucket) || tree2.overlaps(bucket) || tree3.overlaps(bucket)) {
-				bucket.x = oldX;
-				bucket.y = oldY;
+			for (Rectangle item:trees) {
+				if (item.overlaps(bucket)) {
+					bucket.x = oldX;
+					bucket.y = oldY;
+				}
 			}
+
 
 			//if(bucket.x > 1810 && bucket.x < 2005 && bucket.y < 1247 && bucket.y > 1115){
 			//	bucket.x = oldX;
@@ -549,16 +550,12 @@ public class Game implements com.badlogic.gdx.Screen {
 		nov.setText(new Texture(Gdx.files.internal(nov.getImg())));
         counter = counter + 1;
 		Rectangle smet = new Rectangle();
-		smet.x = rand.nextInt(3950-200)+200;
-		smet.y = rand.nextInt(1815 - 105) + 105;
-		if(smet.x > 1810 && smet.x < 2005 && smet.y < 1247 && smet.y > 1115){
-			smet.y = smet.y - 30;
-		}
-		if(smet.x > 1375 && smet.x < 1571 && smet.y < 609 && smet.y > 450){
-			smet.y = smet.y - 30;
-		}
-		if(smet.x > 3386 && smet.x < 3572 && smet.y < 1560 && smet.y > 1401){
-			smet.y = smet.y - 30;
+		smet.x = rand.nextInt((512*width - 250)-200)+200;
+		smet.y = rand.nextInt((512*height - 250) - 105) + 105;
+		for (Rectangle item:trees) {
+			if(smet.overlaps(item)){
+				smet.y = smet.y - 30;
+			}
 		}
 		smet.width = nov.width;
 		smet.height = nov.height;
@@ -624,7 +621,19 @@ public class Game implements com.badlogic.gdx.Screen {
 	}
 
 	private void narediDrevesa(){
-		tree1 = new Rectangle();
+		for (int i=0; i<trees.length; i++) {
+			trees[i] = new Rectangle();
+			trees[i].x = rand.nextInt(((512 * width) - 400)-400) + 400;
+			trees[i].y = rand.nextInt(((512 * height) - 400)-400) + 400;
+			trees[i].height = 67;
+			trees[i].width = 65;
+			for(int j=0; j<i; j++){
+				if(trees[i].overlaps(trees[j]) && i!=j ){
+					trees[i].x = trees[i].x + 150;
+				}
+			}
+		}
+		/*tree1 = new Rectangle();
 		tree2 = new Rectangle();
 		tree3 = new Rectangle();
 		tree1.x = 1870;
@@ -639,6 +648,7 @@ public class Game implements com.badlogic.gdx.Screen {
 		tree3.y = 1480;
 		tree3.width = 130;
 		tree3.height = 130;
+		*/
 	}
 
 	private void dajVKos(int b, TrashType t, boolean isFull){
@@ -697,7 +707,7 @@ public class Game implements com.badlogic.gdx.Screen {
 	private void CreateCustomRegions(Ozadje o){
 		int x = 0;
 		int y = 0;
-		o.setTexture(0, "background_images/BottomLeft.jpg");
+		o.setTexture(0, "background_images/BottomLeft.png");
 		o.setxPos(0, x);
 		o.setyPos(0, y);
 		o.setTexture(1, "background_images/TopLeft.jpg");

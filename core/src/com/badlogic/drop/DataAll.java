@@ -23,7 +23,7 @@ public class DataAll {
         this.speed = 0;
         this.inventorySpace = 0;
         this.gold = 0;
-        time = 120;
+        time = 85;
     }
 
     public DataAll(int lvl, int speed, int inventorySpace, int gold, int timer) {
