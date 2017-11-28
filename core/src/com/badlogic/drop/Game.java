@@ -65,6 +65,7 @@ public class Game implements com.badlogic.gdx.Screen {
 	private Rectangle bucket;
 	private Rectangle[] trees;
 	private Rectangle bag;
+	private Rectangle swap;
     ////////////////////////////////
 	//POLJA Z SMETMI/KOŠIM/SMETEH NA TLEH
 	private Array<Trash> vseSmeti;
@@ -633,6 +634,17 @@ public class Game implements com.badlogic.gdx.Screen {
 				}
 			}
 		}
+		int i, j;
+		for (i = 0; i < trees.length-1; i++) {
+			for (j = 0; j < trees.length - i - 1; j++) {
+				if (trees[j].y < trees[j + 1].y) {
+					swap = trees[j];
+					trees[j] = trees[j + 1];
+					trees[j + 1] = swap;
+				}
+			}
+		}
+
 		/*tree1 = new Rectangle();
 		tree2 = new Rectangle();
 		tree3 = new Rectangle();
