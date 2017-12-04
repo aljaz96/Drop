@@ -46,6 +46,7 @@ public class Game implements com.badlogic.gdx.Screen {
 	private Texture retry;
 	private Texture continuee;
 	private Texture standing;
+	private Texture badboy;
 	private Texture x;
     ////////////////VELIKOST//////////////////
 	private int height = 4;
@@ -81,6 +82,7 @@ public class Game implements com.badlogic.gdx.Screen {
 
     ////////// OTHER
     private Viewport viewport;
+	private Badboy boy;
 	/////// INT/DOUBLE
     private int counter;
 	private int numberOfTrash;
@@ -117,6 +119,7 @@ public class Game implements com.badlogic.gdx.Screen {
 	private float stateTime;
 	private int totalTrash;
 
+
 	float time;
 	boolean gameOn;
 	boolean win;
@@ -136,8 +139,8 @@ public class Game implements com.badlogic.gdx.Screen {
 		/////// ZA OZADJA /////////////////////////////////////
 		//ozadje = new Ozadje();
 		//createRegions(ozadje);
-		height = rand.nextInt(12-5) + 4;
-		width = rand.nextInt(12-5) + 4;
+		height = 3; //rand.nextInt(12-5) + 4;
+		width = 3; //rand.nextInt(12-5) + 4;
 		ozadje = new Ozadje(width,height);
 		CreateCustomRegions(ozadje);
 		/////// ZA OZADJA /////////////////////////////////////
@@ -156,6 +159,7 @@ public class Game implements com.badlogic.gdx.Screen {
 
         background = new Texture(Gdx.files.internal("background2.png"));
 		bucketImage = new Texture(Gdx.files.internal("Hat_man1.png"));
+		badboy = new Texture(Gdx.files.internal("bad_boy1.png"));
         blueBin = new Texture(Gdx.files.internal("blueBin.png"));
         redBin = new Texture(Gdx.files.internal("redBin.png"));
         greenBin = new Texture(Gdx.files.internal("greenBin.png"));
@@ -242,6 +246,7 @@ public class Game implements com.badlogic.gdx.Screen {
 		narediDrevesa();
 		createTrash();
 		//spawnRaindrop();
+		boy = new Badboy(height,width);
 		for(int i=0; i<numberOfTrash; i++){
 			spawnTrash();
 		}
@@ -284,8 +289,11 @@ public class Game implements com.badlogic.gdx.Screen {
         int Xpos = (int)camera.position.x;
         int Ypos = (int)camera.position.y;
 
-
-
+		//BOYS
+		checkBoy();
+		if(boy.isActive) boy.currentImage = boy.runAnimation.getKeyFrame(stateTime, true);
+		if(!boy.isActive) boy.currentImage = new TextureRegion(badboy, 100, 100);
+		//litterText = "Litter left: " +   boy.deltaX + "_____"  + boy.deltaY;
 		//litterText ="x: " +  bucket.getX() + " y:" + bucket.getY();
 		litterText = "Litter left: " +  numberOfTrash;
 		timerText = "Time left: " + String.format("%d",(long)time);
@@ -322,6 +330,8 @@ public class Game implements com.badlogic.gdx.Screen {
 			for(Trash t: vseSmeti) {
 				batch.draw(t.getText(), t.getSmet().x, t.getSmet().y);
 			}
+
+			batch.draw(boy.currentImage, boy.direction ? boy.boy.x+100 : boy.boy.x, boy.boy.y, boy.direction ? -100 : 100, 100);
 			//IGRALEC
 			batch.draw(playerImage, playerDirection ? bucket.x+100 : bucket.x, bucket.y, playerDirection ? -100 : 100, 100);
 			//spriteBatch.draw(currentFrame, flip ? x+width : x, y, flip ? -width : width, height);
@@ -383,33 +393,36 @@ public class Game implements com.badlogic.gdx.Screen {
 				bucket.y -= 66 * speed * Gdx.graphics.getDeltaTime();
 			}
 		}
+		if(boy.isActive == true){
+			boy.boy.x = boy.boy.x + boy.deltaX * boy.speed;
+			boy.boy.y = boy.boy.y + boy.deltaY * boy.speed;
+		}
 		if(gameOn) {
 			if (bucket.y < 130) bucket.y = 130;
 			if (bucket.y > (height * 512) - 200) bucket.y = (height * 512) - 200; //1815, 233
 			if (bucket.x < 60) bucket.x = 60;
 			if (bucket.x > (width * 512)- 146) bucket.x = (width * 512)- 146; //3950
 
-			//Onemogočitev zaletavanja v drevo
+			//Omogočitev zaletavanja v drevo
 			for (Rectangle item:trees) {
 				if (item.overlaps(bucket)) {
 					bucket.x = oldX;
 					bucket.y = oldY;
 				}
+				if(item.overlaps(boy.boy)){
+
+					if(boy.deltaX > 0)	boy.boy.x = boy.boy.x - boy.speed * 2;
+					else boy.boy.x = boy.boy.x +  boy.speed * 2;
+					if(item.overlaps(boy.boy)){
+						if(boy.deltaX > 0){	boy.boy.x = boy.boy.x +  boy.speed * 2; }
+						else boy.boy.x = boy.boy.x - +  boy.speed * 2;
+						if(boy.deltaY > 0) boy.boy.y = boy.boy.y -  boy.speed * 2;
+						else boy.boy.y = boy.boy.y + boy.speed * 2;
+					}
+					boy.calculateDelta();
+
+				}
 			}
-
-
-			//if(bucket.x > 1810 && bucket.x < 2005 && bucket.y < 1247 && bucket.y > 1115){
-			//	bucket.x = oldX;
-			//	bucket.y = oldY;
-			//}
-			//if(bucket.x > 1375 && bucket.x < 1571 && bucket.y < 609 && bucket.y > 450){
-			//	bucket.x = oldX;
-			//	bucket.y = oldY;
-			//}
-			//if(bucket.x > 3386 && bucket.x < 3572 && bucket.y < 1560 && bucket.y > 1401){
-			//	bucket.x = oldX;
-			//	bucket.y = oldY;
-			//}
 
 
 			Iterator<Trash> iter = vseSmeti.iterator();
@@ -565,6 +578,13 @@ public class Game implements com.badlogic.gdx.Screen {
 		vseSmeti.add(nov);
 	}
 
+	private void checkBoy(){
+		if (boy.boy.y < 130) boy.isActive = false;
+		if (boy.boy.y > (height * 512) - 200) boy.isActive = false; //1815, 233
+		if (boy.boy.x < 60) boy.isActive = false;
+		if (boy.boy.x > (width * 512)- 146) boy.isActive = false;
+	}
+
 	private void createTouchPad(){
         touchpadSkin = new Skin();
         touchpadSkin.add("touchBackground", new Texture(Gdx.files.internal("touchBackground.png")));
@@ -644,23 +664,6 @@ public class Game implements com.badlogic.gdx.Screen {
 				}
 			}
 		}
-
-		/*tree1 = new Rectangle();
-		tree2 = new Rectangle();
-		tree3 = new Rectangle();
-		tree1.x = 1870;
-		tree1.y = 1170;
-		tree1.width = 130;
-		tree1.height = 130;
-		tree2.x = 1430;
-		tree2.y = 520;
-		tree2.width = 130;
-		tree2.height = 130;
-		tree3.x = 3440;
-		tree3.y = 1480;
-		tree3.width = 130;
-		tree3.height = 130;
-		*/
 	}
 
 	private void dajVKos(int b, TrashType t, boolean isFull){
