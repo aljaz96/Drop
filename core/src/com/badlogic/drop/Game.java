@@ -58,6 +58,7 @@ public class Game implements com.badlogic.gdx.Screen {
 	private Sound metalSound;
 	private Sound plasticSound;
 	private Sound glassSound;
+	private Sound laugh;
 	private Music music;
 	private OrthographicCamera camera;
 	private SpriteBatch batch;
@@ -67,6 +68,7 @@ public class Game implements com.badlogic.gdx.Screen {
 	private Rectangle[] trees;
 	private Rectangle bag;
 	private Rectangle swap;
+	private Rectangle tester;
     ////////////////////////////////
 	//POLJA Z SMETMI/KOŠIM/SMETEH NA TLEH
 	private Array<Trash> vseSmeti;
@@ -82,9 +84,10 @@ public class Game implements com.badlogic.gdx.Screen {
 
     ////////// OTHER
     private Viewport viewport;
-	private Badboy boy;
+	private Badboy[] boys;
 	/////// INT/DOUBLE
     private int counter;
+	private int counter2 = 0;
 	private int numberOfTrash;
 	private float speed;
 	private float oldX;
@@ -184,6 +187,7 @@ public class Game implements com.badlogic.gdx.Screen {
 		metalSound = Gdx.audio.newSound(Gdx.files.internal("kovina.mp3"));
 		plasticSound = Gdx.audio.newSound(Gdx.files.internal("plastika.mp3"));
 		crackSound = Gdx.audio.newSound(Gdx.files.internal("crackSound.mp3"));
+		laugh = Gdx.audio.newSound(Gdx.files.internal("smirk.mp3"));
 
 		// start the playback of the background music immediately
 		music.setLooping(true);
@@ -232,6 +236,12 @@ public class Game implements com.badlogic.gdx.Screen {
 		}
 		runningAnimation = new Animation<TextureRegion>(0.1f, walkFrames);
 
+		boys = new Badboy[10];
+		for(int i=0; i<boys.length; i++){
+			boys[i] = new Badboy(height,width);
+			boys[i].startTime = rand.nextInt((int)time - ((int)time / 2)) + ((int)time / 2);
+		}
+
         createTouchPad();
 
         bins = new Array<Rectangle>();
@@ -246,7 +256,6 @@ public class Game implements com.badlogic.gdx.Screen {
 		narediDrevesa();
 		createTrash();
 		//spawnRaindrop();
-		boy = new Badboy(height,width);
 		for(int i=0; i<numberOfTrash; i++){
 			spawnTrash();
 		}
@@ -290,12 +299,15 @@ public class Game implements com.badlogic.gdx.Screen {
         int Ypos = (int)camera.position.y;
 
 		//BOYS
-		checkBoy();
-		if(boy.isActive) boy.currentImage = boy.runAnimation.getKeyFrame(stateTime, true);
-		if(!boy.isActive) boy.currentImage = new TextureRegion(badboy, 100, 100);
+		for (Badboy boy: boys) {
+			if (boy.isActive) checkBoy(boy);
+			//checkBoy(boy);
+			if (boy.isActive) boy.currentImage = boy.runAnimation.getKeyFrame(stateTime, true);
+			//if (!boy.isActive) boy.currentImage = new TextureRegion(badboy, 100, 100);
+		}
 		//litterText = "Litter left: " +   boy.deltaX + "_____"  + boy.deltaY;
-		//litterText ="x: " +  bucket.getX() + " y:" + bucket.getY();
-		litterText = "Litter left: " +  numberOfTrash;
+		litterText ="x: " + boys[0].deltaX + "__" +  boys[0].directionX + "__" + boys[0].defaultX + " y:" + boys[0].directionY + "__" + boys[0].defaultY;
+		//litterText = "Litter left: " +  numberOfTrash;
 		timerText = "Time left: " + String.format("%d",(long)time);
 		inventoryText = " " + currentInventory + "/" + inventorySize;
 		scoreText = "Score: " + score;
@@ -330,8 +342,12 @@ public class Game implements com.badlogic.gdx.Screen {
 			for(Trash t: vseSmeti) {
 				batch.draw(t.getText(), t.getSmet().x, t.getSmet().y);
 			}
-
-			batch.draw(boy.currentImage, boy.direction ? boy.boy.x+100 : boy.boy.x, boy.boy.y, boy.direction ? -100 : 100, 100);
+			//BOYS
+			for (Badboy boy: boys) {
+				if(boy.isActive) {
+					batch.draw(boy.currentImage, boy.direction ? boy.boy.x + 100 : boy.boy.x, boy.boy.y, boy.direction ? -100 : 100, 100);
+				}
+			}
 			//IGRALEC
 			batch.draw(playerImage, playerDirection ? bucket.x+100 : bucket.x, bucket.y, playerDirection ? -100 : 100, 100);
 			//spriteBatch.draw(currentFrame, flip ? x+width : x, y, flip ? -width : width, height);
@@ -393,37 +409,80 @@ public class Game implements com.badlogic.gdx.Screen {
 				bucket.y -= 66 * speed * Gdx.graphics.getDeltaTime();
 			}
 		}
-		if(boy.isActive == true){
-			boy.boy.x = boy.boy.x + boy.deltaX * boy.speed;
-			boy.boy.y = boy.boy.y + boy.deltaY * boy.speed;
+
+		for (Badboy boy : boys) {
+			if(boy.isActive) {
+				int up_down = 0;
+				int left_right = 0;
+				boy.isBumping = false;
+				for (Rectangle item : trees) {
+					boy.boy.x += 2;
+					if (boy.boy.overlaps(item) && boy.defaultX == 1) {
+						left_right++;
+						boy.isBumping = true;
+					}
+					boy.boy.x -= 4;
+					if (boy.boy.overlaps(item) && boy.isBumping == false && boy.defaultX == -1) {
+						left_right++;
+						boy.isBumping = true;
+					}
+					boy.boy.x += 2;
+					boy.boy.y += 2;
+					if (boy.boy.overlaps(item) && boy.isBumping == false && boy.defaultY == 1) {
+						up_down++;
+						boy.isBumping = true;
+					}
+					boy.boy.y -= 4;
+					if (boy.boy.overlaps(item) && boy.isBumping == false && boy.defaultY == -1) {
+						up_down++;
+						boy.isBumping = true;
+					}
+					boy.boy.y += 2;
+				}
+				boy.counter--;
+				if (boy.counter < 0) {
+					boy.directionX = boy.defaultX;
+				}
+				if (up_down > 0 || left_right > 0) {
+					if (up_down == 0 && left_right > 0) {
+						boy.boy.y = boy.boy.y + 1 * boy.defaultY;
+					} else if (up_down > 0 && left_right == 0) {
+						boy.boy.x = boy.boy.x + 1 * boy.directionX;
+					} else if (up_down > 0 && left_right > 0) {
+						boy.counter = 200;
+						boy.directionX = boy.defaultX * -1;
+						//boy.direction = !boy.direction;
+						boy.boy.x = boy.boy.x + boy.deltaX * boy.speed * boy.directionX;
+					}
+				}
+				boy.calculateDelta();
+			}
 		}
+		for (Badboy boy: boys) {
+			if(boy.startTime > time && !boy.isActive && boy.playSound == 1){
+				boy.isActive = true;
+				laugh.play();
+				boy.playSound++;
+			}
+			if (boy.isActive == true && boy.isBumping == false) {
+				boy.boy.x = boy.boy.x + boy.deltaX * boy.speed * boy.directionX;
+				boy.boy.y = boy.boy.y + boy.deltaY * boy.speed;
+			}
+		}
+
 		if(gameOn) {
 			if (bucket.y < 130) bucket.y = 130;
 			if (bucket.y > (height * 512) - 200) bucket.y = (height * 512) - 200; //1815, 233
 			if (bucket.x < 60) bucket.x = 60;
-			if (bucket.x > (width * 512)- 146) bucket.x = (width * 512)- 146; //3950
+			if (bucket.x > (width * 512) - 146) bucket.x = (width * 512) - 146; //3950
 
 			//Omogočitev zaletavanja v drevo
-			for (Rectangle item:trees) {
+			for (Rectangle item : trees) {
 				if (item.overlaps(bucket)) {
 					bucket.x = oldX;
 					bucket.y = oldY;
 				}
-				if(item.overlaps(boy.boy)){
-
-					if(boy.deltaX > 0)	boy.boy.x = boy.boy.x - boy.speed * 2;
-					else boy.boy.x = boy.boy.x +  boy.speed * 2;
-					if(item.overlaps(boy.boy)){
-						if(boy.deltaX > 0){	boy.boy.x = boy.boy.x +  boy.speed * 2; }
-						else boy.boy.x = boy.boy.x - +  boy.speed * 2;
-						if(boy.deltaY > 0) boy.boy.y = boy.boy.y -  boy.speed * 2;
-						else boy.boy.y = boy.boy.y + boy.speed * 2;
-					}
-					boy.calculateDelta();
-
-				}
 			}
-
 
 			Iterator<Trash> iter = vseSmeti.iterator();
 			while (iter.hasNext()) {
@@ -578,12 +637,29 @@ public class Game implements com.badlogic.gdx.Screen {
 		vseSmeti.add(nov);
 	}
 
-	private void checkBoy(){
-		if (boy.boy.y < 130) boy.isActive = false;
-		if (boy.boy.y > (height * 512) - 200) boy.isActive = false; //1815, 233
-		if (boy.boy.x < 60) boy.isActive = false;
-		if (boy.boy.x > (width * 512)- 146) boy.isActive = false;
+	private void checkBoy(Badboy boy){
+			if (boy.boy.y < 125 && boy.playSound == 2) { //125
+				laugh.play();
+				boy.playSound++;
+				boy.isActive = false;
+			}
+			if (boy.boy.y > (height * 512) - 180 && boy.playSound == 2) { //145
+				laugh.play();
+				boy.playSound++;
+				boy.isActive = false;
+			}//1815, 233
+			if (boy.boy.x < 65 && boy.playSound == 2) { //55
+				laugh.play();
+				boy.playSound++;
+				boy.isActive = false;
+			}
+			if (boy.boy.x > (width * 512) - 140 && boy.playSound == 2) { //142
+				laugh.play();
+				boy.playSound++;
+				boy.isActive = false;
+			}
 	}
+
 
 	private void createTouchPad(){
         touchpadSkin = new Skin();
@@ -717,7 +793,6 @@ public class Game implements com.badlogic.gdx.Screen {
 		}
 		reciklira = false;
 	}
-
 
 	private void CreateCustomRegions(Ozadje o){
 		int x = 0;
