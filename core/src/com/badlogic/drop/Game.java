@@ -48,6 +48,11 @@ public class Game implements com.badlogic.gdx.Screen {
 	private Texture standing;
 	private Texture badboy;
 	private Texture x;
+	private Texture minigame_screen;
+	private Texture minigame_character;
+	private Texture minigame_boy;
+	private Texture minigame_tree;
+	private Texture minigame_x;
     ////////////////VELIKOST//////////////////
 	private int height = 4;
 	private int width = 8;
@@ -85,6 +90,7 @@ public class Game implements com.badlogic.gdx.Screen {
     ////////// OTHER
     private Viewport viewport;
 	private Badboy[] boys;
+	private Minigame minigame;
 	/////// INT/DOUBLE
     private int counter;
 	private int counter2 = 0;
@@ -125,6 +131,7 @@ public class Game implements com.badlogic.gdx.Screen {
 
 	float time;
 	boolean gameOn;
+	boolean minigameOn = false;
 	boolean win;
     //// MY CLASSES
     Ozadje ozadje;
@@ -178,6 +185,11 @@ public class Game implements com.badlogic.gdx.Screen {
 		continuee = new Texture(Gdx.files.internal("continue.png"));
 		standing = new Texture(Gdx.files.internal("hat_man.png"));
 		x = new Texture(Gdx.files.internal("x.png"));
+		minigame_screen = new Texture(Gdx.files.internal("minigame.jpg"));
+		minigame_character = new Texture(Gdx.files.internal("minigame_me.png"));
+		minigame_boy = new Texture(Gdx.files.internal("minigame_boy.png"));
+		minigame_tree = new Texture(Gdx.files.internal("minigame_tree.png"));
+		minigame_x = new Texture(Gdx.files.internal("minigame_x.png"));
 
 		// load the sound effects and the rain background "music"
 		dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
@@ -239,7 +251,9 @@ public class Game implements com.badlogic.gdx.Screen {
 		boys = new Badboy[10];
 		for(int i=0; i<boys.length; i++){
 			boys[i] = new Badboy(height,width);
+			boys[i].ID = i + 1;
 			boys[i].startTime = rand.nextInt((int)time - ((int)time / 2)) + ((int)time / 2);
+			boys[i].numberOfTrash = rand.nextInt(4-0) + 0;
 		}
 
         createTouchPad();
@@ -269,7 +283,7 @@ public class Game implements com.badlogic.gdx.Screen {
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 		stateTime += Gdx.graphics.getDeltaTime();
 
-		if(gameOn) {
+		if(gameOn && !minigameOn) {
 			float deltaTime = Gdx.graphics.getDeltaTime();
 			time -= deltaTime;
 			if(time <= 0){
@@ -299,11 +313,13 @@ public class Game implements com.badlogic.gdx.Screen {
         int Ypos = (int)camera.position.y;
 
 		//BOYS
-		for (Badboy boy: boys) {
-			if (boy.isActive) checkBoy(boy);
-			//checkBoy(boy);
-			if (boy.isActive) boy.currentImage = boy.runAnimation.getKeyFrame(stateTime, true);
-			//if (!boy.isActive) boy.currentImage = new TextureRegion(badboy, 100, 100);
+		if(!minigameOn) {
+			for (Badboy boy : boys) {
+				if (boy.isActive) checkBoy(boy);
+				//checkBoy(boy);
+				if (boy.isActive) boy.currentImage = boy.runAnimation.getKeyFrame(stateTime, true);
+				//if (!boy.isActive) boy.currentImage = new TextureRegion(badboy, 100, 100);
+			}
 		}
 		//litterText = "Litter left: " +   boy.deltaX + "_____"  + boy.deltaY;
 		litterText ="x: " + boys[0].deltaX + "__" +  boys[0].directionX + "__" + boys[0].defaultX + " y:" + boys[0].directionY + "__" + boys[0].defaultY;
@@ -386,12 +402,33 @@ public class Game implements com.badlogic.gdx.Screen {
 					font.draw(batch, scoreText, camera.position.x - 250, camera.position.y);
 				}
 			}
+			if(minigameOn){
+				batch.draw(minigame_screen, camera.position.x - minigame.drawPosX, camera.position.y - minigame.drawPosY, minigame_screen.getWidth() * 1.3f, minigame_screen.getHeight() * 1.3f);
+				for(int i=0; i<8; i++){
+					for(int j = 0; j<8; j++){
+						if(minigame.zones[i][j] == 3) {
+							batch.draw(minigame_tree, camera.position.x - minigame.drawPosX + (47 * 1.3f * i), camera.position.y - minigame.drawPosY + (47 * 1.3f * j), minigame_tree.getWidth() * 1.3f, minigame_tree.getHeight() * 1.3f);
+						}
+						if(minigame.zones[i][j] == 1){
+							batch.draw(minigame_character, camera.position.x - minigame.drawPosX + (47 * 1.3f * i), camera.position.y - minigame.drawPosY + (47 * 1.3f * j), minigame_character.getWidth() * 1.3f, minigame_character.getHeight() * 1.3f);
+						}
+						if(minigame.zones[i][j] == 2){
+							batch.draw(minigame_boy, camera.position.x - minigame.drawPosX + (47 * 1.3f * i), camera.position.y - minigame.drawPosY + (47 * 1.3f * j), minigame_boy.getWidth() * 1.3f, minigame_boy.getHeight() * 1.3f);
+						}
+						if(minigame.zones[i][j] == 4){
+							batch.draw(minigame_x, camera.position.x - minigame.drawPosX + (47 * 1.3f * i), camera.position.y - minigame.drawPosY + (47 * 1.3f * j), minigame_x.getWidth() * 1.3f, minigame_x.getHeight() * 1.3f);
+						}
+					}
+				}
+			}
 			//KONEC RISANJA NA ZASLON
         batch.end();
         stage.act(Gdx.graphics.getDeltaTime());
         stage.draw();
 
-		if(wait <= 0 && gameOn) {
+		////////////////////////PREMIKANJE///////////////////////////////////////
+		if(wait <= 0 && gameOn && !minigameOn) {
+			//Premikaje characterja
 			bucket.setX(bucket.getX() + touchpad.getKnobPercentX() * speed);
 			bucket.setY(bucket.getY() + touchpad.getKnobPercentY() * speed);
 			if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
@@ -408,67 +445,88 @@ public class Game implements com.badlogic.gdx.Screen {
 			if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
 				bucket.y -= 66 * speed * Gdx.graphics.getDeltaTime();
 			}
-		}
 
-		for (Badboy boy : boys) {
-			if(boy.isActive) {
-				int up_down = 0;
-				int left_right = 0;
-				boy.isBumping = false;
-				for (Rectangle item : trees) {
-					boy.boy.x += 2;
-					if (boy.boy.overlaps(item) && boy.defaultX == 1) {
-						left_right++;
-						boy.isBumping = true;
+			//Premikanje boys
+			for (Badboy boy : boys) {
+				if(boy.isActive) {
+					boy.oldX[boy.positionCounter] = (int)boy.boy.x;
+					boy.oldY[boy.positionCounter] = (int)boy.boy.y;
+					boy.positionCounter++;
+					if(boy.positionCounter >= 2) boy.positionCounter = 0;
+
+					int up_down = 0;
+					int left_right = 0;
+					boy.isBumping = false;
+					for (Rectangle item : trees) {
+						boy.boy.x += 20;
+						if (boy.boy.overlaps(item) && boy.defaultX == 1) {
+							left_right++;
+							boy.isBumping = true;
+						}
+						boy.boy.x -= 40;
+						if (boy.boy.overlaps(item) && boy.isBumping == false && boy.defaultX == -1) {
+							left_right++;
+							boy.isBumping = true;
+						}
+						boy.boy.x += 20;
+						boy.boy.y += 20;
+						if (boy.boy.overlaps(item) && boy.isBumping == false && boy.defaultY == 1) {
+							up_down++;
+							boy.isBumping = true;
+						}
+						boy.boy.y -= 40;
+						if (boy.boy.overlaps(item) && boy.isBumping == false && boy.defaultY == -1) {
+							up_down++;
+							boy.isBumping = true;
+						}
+						boy.boy.y += 20;
 					}
-					boy.boy.x -= 4;
-					if (boy.boy.overlaps(item) && boy.isBumping == false && boy.defaultX == -1) {
-						left_right++;
-						boy.isBumping = true;
+					boy.counter--;
+					if (boy.counter < 0) {
+						boy.directionX = boy.defaultX;
 					}
-					boy.boy.x += 2;
-					boy.boy.y += 2;
-					if (boy.boy.overlaps(item) && boy.isBumping == false && boy.defaultY == 1) {
-						up_down++;
-						boy.isBumping = true;
+					if (up_down > 0 || left_right > 0) {
+						if (up_down > 0 && left_right > 0 || (boy.oldX[0] == boy.oldX[1] && boy.oldY[0] == boy.oldY[1])) {
+							boy.counter = 200;
+							boy.directionX = boy.defaultX * -1;
+							//boy.direction = !boy.direction;
+							//boy.boy.x = boy.boy.x + boy.deltaX * boy.speed * boy.directionX;
+							boy.isBumping = false;
+						}
+						else if (up_down > 0 && left_right == 0) {
+							if(boy.deltaX > 0) {
+								boy.boy.x = boy.boy.x + 1 * boy.directionX;
+							}
+							if(boy.deltaX < 0){
+								boy.boy.x = boy.boy.x - 1 * boy.directionX;
+							}
+						}
+						else if (up_down == 0 && left_right > 0) {
+							if(boy.deltaY > 0) {
+								boy.boy.y = boy.boy.y + 1 * boy.defaultY;
+							}
+							if(boy.defaultY < 0){
+								boy.boy.y = boy.boy.y - 1 * boy.defaultY;
+							}
+						}
 					}
-					boy.boy.y -= 4;
-					if (boy.boy.overlaps(item) && boy.isBumping == false && boy.defaultY == -1) {
-						up_down++;
-						boy.isBumping = true;
-					}
-					boy.boy.y += 2;
+					boy.calculateDelta();
 				}
-				boy.counter--;
-				if (boy.counter < 0) {
-					boy.directionX = boy.defaultX;
+			}
+			for (Badboy boy: boys) {
+				if(boy.startTime > time && !boy.isActive && boy.playSound == 1){
+					boy.isActive = true;
+					laugh.play();
+					boy.playSound++;
 				}
-				if (up_down > 0 || left_right > 0) {
-					if (up_down == 0 && left_right > 0) {
-						boy.boy.y = boy.boy.y + 1 * boy.defaultY;
-					} else if (up_down > 0 && left_right == 0) {
-						boy.boy.x = boy.boy.x + 1 * boy.directionX;
-					} else if (up_down > 0 && left_right > 0) {
-						boy.counter = 200;
-						boy.directionX = boy.defaultX * -1;
-						//boy.direction = !boy.direction;
-						boy.boy.x = boy.boy.x + boy.deltaX * boy.speed * boy.directionX;
-					}
+				if (boy.isActive == true && boy.isBumping == false) {
+					boy.boy.x = boy.boy.x + boy.deltaX * boy.speed * boy.directionX;
+					boy.boy.y = boy.boy.y + boy.deltaY * boy.speed;
 				}
-				boy.calculateDelta();
 			}
 		}
-		for (Badboy boy: boys) {
-			if(boy.startTime > time && !boy.isActive && boy.playSound == 1){
-				boy.isActive = true;
-				laugh.play();
-				boy.playSound++;
-			}
-			if (boy.isActive == true && boy.isBumping == false) {
-				boy.boy.x = boy.boy.x + boy.deltaX * boy.speed * boy.directionX;
-				boy.boy.y = boy.boy.y + boy.deltaY * boy.speed;
-			}
-		}
+		//////////////////////////KONEC PREMIKANJA////////////////////////
+
 
 		if(gameOn) {
 			if (bucket.y < 130) bucket.y = 130;
@@ -509,8 +567,42 @@ public class Game implements com.badlogic.gdx.Screen {
 		}
 
 		// ITERAKCIJE Z ZASLONOM /////////////////////////////////////////////////
+
+		if(gameOn && !minigameOn){
+			for (Badboy boy: boys) {
+				if(bucket.overlaps(boy.boy) && Gdx.input.justTouched() && minigameOn == false){
+					minigameOn = true;
+					minigame = new Minigame(boy.ID, trees.length, all.getLvl(), all.getSpeed(), boy.speed);
+				}
+			}
+		}
+		if(minigameOn){
+			if(Gdx.input.justTouched()){
+				Vector3 tmp=new Vector3(Gdx.input.getX(),Gdx.input.getY(), 0);
+				for(int x=0; x<8; x++){
+					for(int y=0; y<8; y++){
+						Rectangle clickBounds=new Rectangle(minigame.drawPosX + 10 + (42 * y), minigame.drawPosY - 175 + (40 * x), 40, 40);
+						if(clickBounds.contains(tmp.x, tmp.y)){
+							if((minigame.Cx == y || minigame.Cx == y+1 || minigame.Cx == y-1) && (minigame.Cy == 7-x || minigame.Cy == 7-x-1 || minigame.Cy == 7-x+1 )){
+								if(minigame.zones[y][x] != 3 && minigame.zones[y][x] != 1) {
+									if((minigame.Cx == y && minigame.Cy != 7 - x) || (minigame.Cx != y && minigame.Cy == 7 - x) || (minigame.Cx != y && minigame.Cy != 7 - x)) {
+										if (minigame.Xx != -1) {
+											minigame.zones[minigame.Xx][minigame.Xy] = 0;
+										}
+										minigame.zones[y][7 - x] = 4;
+										minigame.Xx = y;
+										minigame.Xy = 7 - x;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
 		if(!gameOn){
-			if(Gdx.input.isTouched() && !win){
+			if(Gdx.input.justTouched() && !win){
 				Vector3 tmp=new Vector3(Gdx.input.getX(),Gdx.input.getY(), 0);
 				camera.unproject(tmp);
 				Rectangle resetBounds=new Rectangle(camera.position.x - 280,camera.position.y - 170, 181, 84);
@@ -533,7 +625,7 @@ public class Game implements com.badlogic.gdx.Screen {
 					game.setScreen(new MainMenuScreen(game));
 				}
 			}
-			if(Gdx.input.isTouched() && win){
+			if(Gdx.input.justTouched() && win){
 				Vector3 tmp=new Vector3(Gdx.input.getX(),Gdx.input.getY(), 0);
 				camera.unproject(tmp);
 				Rectangle resetBounds=new Rectangle(camera.position.x - 280,camera.position.y - 170, 181, 84);
@@ -569,7 +661,7 @@ public class Game implements com.badlogic.gdx.Screen {
 				}
 			}
 		}
-		if(Gdx.input.isTouched() && gameOn) {
+		if(Gdx.input.justTouched() && gameOn) {
 			Vector3 tmp = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
 			camera.unproject(tmp);
 			Rectangle xBounds = new Rectangle(camera.position.x + 470, camera.position.y + 260, 100, 100);

@@ -13,6 +13,7 @@ import java.util.Random;
  */
 
 public class Badboy {
+        public int ID;
         public TextureRegion[] walkFrames;
         public int startTime;
         public int xStart;
@@ -34,6 +35,11 @@ public class Badboy {
         public boolean isBumping = false;
         public int playSound = 1;
         public int counter = 0;
+        public int oldX[];
+        public int oldY[];
+        public int positionCounter = 0;
+        public int numberOfTrash;
+        public int trashDroped = 0;
 
     public float getSpeed() {
         return speed;
@@ -45,6 +51,12 @@ public class Badboy {
 
     public Badboy(int height, int width){
         //isActive = true;
+        oldX = new int[2];
+        oldY = new int[2];
+        oldX[0] = 1;
+        oldX[1] = 2;
+        oldY[0] = 3;
+        oldY[1] = 4;
         walkFrames = new TextureRegion[2 * 2];
         Texture t = new Texture(Gdx.files.internal("bad_boy.png"));
         TextureRegion[][] tmp = TextureRegion.split(t, t.getWidth() / 2, t.getHeight() / 2);
