@@ -53,6 +53,7 @@ public class Game implements com.badlogic.gdx.Screen {
 	private Texture minigame_boy;
 	private Texture minigame_tree;
 	private Texture minigame_x;
+	private Texture minigame_checkmate;
     ////////////////VELIKOST//////////////////
 	private int height = 4;
 	private int width = 8;
@@ -65,6 +66,8 @@ public class Game implements com.badlogic.gdx.Screen {
 	private Sound glassSound;
 	private Sound laugh;
 	private Music music;
+	private Sound error;
+	private Sound winSound;
 	private OrthographicCamera camera;
 	private SpriteBatch batch;
     ////////////////////////////////
@@ -95,6 +98,7 @@ public class Game implements com.badlogic.gdx.Screen {
     private int counter;
 	private int counter2 = 0;
 	private int numberOfTrash;
+	float deltaTime;
 	private float speed;
 	private float oldX;
 	private float oldY;
@@ -149,8 +153,10 @@ public class Game implements com.badlogic.gdx.Screen {
 		/////// ZA OZADJA /////////////////////////////////////
 		//ozadje = new Ozadje();
 		//createRegions(ozadje);
-		height = 3; //rand.nextInt(12-5) + 4;
-		width = 3; //rand.nextInt(12-5) + 4;
+		//height = 3; //rand.nextInt(12-5) + 4;
+		//width = 3; //rand.nextInt(12-5) + 4;
+		height = rand.nextInt(12-5) + 4;
+		width = rand.nextInt(12-5) + 4;
 		ozadje = new Ozadje(width,height);
 		CreateCustomRegions(ozadje);
 		/////// ZA OZADJA /////////////////////////////////////
@@ -190,7 +196,7 @@ public class Game implements com.badlogic.gdx.Screen {
 		minigame_boy = new Texture(Gdx.files.internal("minigame_boy.png"));
 		minigame_tree = new Texture(Gdx.files.internal("minigame_tree.png"));
 		minigame_x = new Texture(Gdx.files.internal("minigame_x.png"));
-
+		minigame_checkmate = new Texture(Gdx.files.internal("minigame_checkmate.png"));
 		// load the sound effects and the rain background "music"
 		dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
 		music = Gdx.audio.newMusic(Gdx.files.internal("gameTheme.mp3"));
@@ -200,6 +206,8 @@ public class Game implements com.badlogic.gdx.Screen {
 		plasticSound = Gdx.audio.newSound(Gdx.files.internal("plastika.mp3"));
 		crackSound = Gdx.audio.newSound(Gdx.files.internal("crackSound.mp3"));
 		laugh = Gdx.audio.newSound(Gdx.files.internal("smirk.mp3"));
+		error = Gdx.audio.newSound(Gdx.files.internal("error.wav"));
+		winSound = Gdx.audio.newSound(Gdx.files.internal("win.mp3"));
 
 		// start the playback of the background music immediately
 		music.setLooping(true);
@@ -284,7 +292,7 @@ public class Game implements com.badlogic.gdx.Screen {
 		stateTime += Gdx.graphics.getDeltaTime();
 
 		if(gameOn && !minigameOn) {
-			float deltaTime = Gdx.graphics.getDeltaTime();
+			deltaTime = Gdx.graphics.getDeltaTime();
 			time -= deltaTime;
 			if(time <= 0){
 				gameOn = false;
@@ -292,7 +300,7 @@ public class Game implements com.badlogic.gdx.Screen {
 			}
 		}
 
-		if(gameOn && numberOfTrash == 0 && currentInventory == 0){
+		if(gameOn && numberOfTrash <= 0 && currentInventory == 0 && vseSmeti.size == 0){
 			win = true;
 			gameOn = false;
 		}
@@ -322,8 +330,8 @@ public class Game implements com.badlogic.gdx.Screen {
 			}
 		}
 		//litterText = "Litter left: " +   boy.deltaX + "_____"  + boy.deltaY;
-		litterText ="x: " + boys[0].deltaX + "__" +  boys[0].directionX + "__" + boys[0].defaultX + " y:" + boys[0].directionY + "__" + boys[0].defaultY;
-		//litterText = "Litter left: " +  numberOfTrash;
+		//litterText ="x: " + boys[0].deltaX + "__" +  boys[0].directionX + "__" + boys[0].defaultX + " y:" + boys[0].directionY + "__" + boys[0].defaultY;
+		litterText = "Litter left: " +  numberOfTrash;
 		timerText = "Time left: " + String.format("%d",(long)time);
 		inventoryText = " " + currentInventory + "/" + inventorySize;
 		scoreText = "Score: " + score;
@@ -379,6 +387,7 @@ public class Game implements com.badlogic.gdx.Screen {
 			scoreFont.draw(batch, scoreText, camera.position.x - 50, camera.position.y + 290);
 			scoreFont.draw(batch, timerText, camera.position.x - 50, camera.position.y + 330);
 			batch.draw(x, camera.position.x + 470, camera.position.y + 260, 100, 100);
+			//RISANJE POP UPA
 			if(!gameOn){
 				batch.draw(popUP, camera.position.x - 356.25f, camera.position.y - 225.75f, popUP.getWidth() * 1.5f, popUP.getHeight() * 1.5f);
 				float percent = ((float)score/(float)totalScore) * 100;
@@ -402,8 +411,19 @@ public class Game implements com.badlogic.gdx.Screen {
 					font.draw(batch, scoreText, camera.position.x - 250, camera.position.y);
 				}
 			}
+			//RISANJE MINIGAMA
 			if(minigameOn){
 				batch.draw(minigame_screen, camera.position.x - minigame.drawPosX, camera.position.y - minigame.drawPosY, minigame_screen.getWidth() * 1.3f, minigame_screen.getHeight() * 1.3f);
+				scoreFont.draw(batch, "Time left: " + minigame.timer, camera.position.x - 60, camera.position.y + 317);
+				scoreFont.draw(batch, "Your speed: " + minigame.mySpeed, camera.position.x - 200, camera.position.y + 295);
+				scoreFont.draw(batch, "Boy speed: " + minigame.boySpeed, camera.position.x + 70, camera.position.y + 290);
+				scoreFont.draw(batch, "Boy move in: " + minigame.boySpeedTimer, camera.position.x + 70, camera.position.y + 270);
+				if(minigame.mySpeedTimer > 0){
+					scoreFont.draw(batch, "Your move in: " + minigame.mySpeedTimer, camera.position.x - 200, camera.position.y + 270);
+				}
+				else{
+					scoreFont.draw(batch, "MOVE READY!", camera.position.x - 200, camera.position.y + 270);
+				}
 				for(int i=0; i<8; i++){
 					for(int j = 0; j<8; j++){
 						if(minigame.zones[i][j] == 3) {
@@ -417,6 +437,9 @@ public class Game implements com.badlogic.gdx.Screen {
 						}
 						if(minigame.zones[i][j] == 4){
 							batch.draw(minigame_x, camera.position.x - minigame.drawPosX + (47 * 1.3f * i), camera.position.y - minigame.drawPosY + (47 * 1.3f * j), minigame_x.getWidth() * 1.3f, minigame_x.getHeight() * 1.3f);
+						}
+						if(minigame.zones[i][j] == 5){
+							batch.draw(minigame_checkmate, camera.position.x - minigame.drawPosX + (47 * 1.3f * i), camera.position.y - minigame.drawPosY + (47 * 1.3f * j), minigame_checkmate.getWidth() * 1.3f, minigame_checkmate.getHeight() * 1.3f);
 						}
 					}
 				}
@@ -449,6 +472,33 @@ public class Game implements com.badlogic.gdx.Screen {
 			//Premikanje boys
 			for (Badboy boy : boys) {
 				if(boy.isActive) {
+					//METANJE ODPADKOV OSEBE
+					if(boy.numberOfTrash > 0 && boy.trashDroped != numberOfTrash && boy.canDrop){
+						int r = rand.nextInt(1000-1) + 1;
+						if(r == 250){
+							boy.trashDroped++;
+							boy.isBad = true;
+							boy.wasBlamed = false;
+							Trash nov = smeti.get(rand.nextInt(16 - 0) + 0).create_clone();
+							nov.setText(new Texture(Gdx.files.internal(nov.getImg())));
+							counter = counter + 1;
+							Rectangle smet = new Rectangle();
+							smet.x = boy.boy.x;
+							smet.y = boy.boy.y;
+							for (Rectangle item:trees) {
+								if(smet.overlaps(item)){
+									smet.y = smet.y - 30;
+								}
+							}
+							smet.width = nov.width;
+							smet.height = nov.height;
+							nov.setSmet(smet);
+							totalScore = nov.getValue() + totalScore;
+							vseSmeti.add(nov);
+						}
+					}
+					//////////////////////////////////
+
 					boy.oldX[boy.positionCounter] = (int)boy.boy.x;
 					boy.oldY[boy.positionCounter] = (int)boy.boy.y;
 					boy.positionCounter++;
@@ -570,35 +620,123 @@ public class Game implements com.badlogic.gdx.Screen {
 
 		if(gameOn && !minigameOn){
 			for (Badboy boy: boys) {
-				if(bucket.overlaps(boy.boy) && Gdx.input.justTouched() && minigameOn == false){
-					minigameOn = true;
-					minigame = new Minigame(boy.ID, trees.length, all.getLvl(), all.getSpeed(), boy.speed);
+				if(bucket.overlaps(boy.boy) && Gdx.input.justTouched() && minigameOn == false && boy.wasBlamed == false){
+					boy.wasBlamed = true;
+					if(boy.isBad == true) {
+						minigameOn = true;
+						minigame = new Minigame(boy.ID, trees.length, all.getLvl(), all.getSpeed(), boy.speed);
+					}
+					else if(boy.isBad == false){
+						score -= 250;
+						error.play();
+						boy.setSpeed(boy.getSpeed() * 2);
+					}
 				}
 			}
 		}
-		if(minigameOn){
-			if(Gdx.input.justTouched()){
+		if(minigameOn && minigame.win == 0){
+			minigame.timer -= deltaTime;
+			minigame.timer = Math.round(minigame.timer * 100);
+			minigame.timer = minigame.timer / 100;
+			minigame.mySpeedTimer -= deltaTime;
+			minigame.mySpeedTimer = Math.round(minigame.mySpeedTimer * 100);
+			minigame.mySpeedTimer = minigame.mySpeedTimer / 100;
+			minigame.boySpeedTimer -= deltaTime;
+			minigame.boySpeedTimer = Math.round(minigame.boySpeedTimer * 100);
+			minigame.boySpeedTimer = minigame.boySpeedTimer / 100;
+			if(minigame.mySpeedTimer <= 0){
+				int Xx = 0;
+				int Xy = 0;
+				int myX = 0;
+				int myY = 0;
+				boolean xOn = false;
+				for(int x=0; x<8; x++) {
+					for (int y = 0; y < 8; y++) {
+						if (minigame.zones[x][y] == 4 || minigame.zones[x][y] == 5) {
+							Xx = x;
+							Xy = y;
+							xOn = true;
+						}
+						if(minigame.zones[x][y] == 1){
+							myX = x;
+							myY = y;
+						}
+					}
+				}
+				if(xOn == true){
+					minigame.zones[myX][myY] = 0;
+					minigame.zones[Xx][Xy] = 1;
+					minigame.Cx = Xx;
+					minigame.Cy = Xy;
+					minigame.Xx = -1;
+					minigame.Xy = -1;
+					minigame.mySpeedTimer = 3 - minigame.mySpeed;
+				}
+			}
+
+			if(minigame.zones[minigame.Bx][minigame.By] != 5 && minigame.Xx != -1){
+				minigame.zones[minigame.Xx][minigame.Xy] = 4;
+			}
+
+			if(Gdx.input.isTouched() && minigame.win == 0){
 				Vector3 tmp=new Vector3(Gdx.input.getX(),Gdx.input.getY(), 0);
 				for(int x=0; x<8; x++){
 					for(int y=0; y<8; y++){
-						Rectangle clickBounds=new Rectangle(minigame.drawPosX + 10 + (42 * y), minigame.drawPosY - 175 + (40 * x), 40, 40);
+						Rectangle clickBounds=new Rectangle(minigame.drawPosX + 10 + (42 * x), minigame.drawPosY - 175 + (40 * y), 40, 40);
 						if(clickBounds.contains(tmp.x, tmp.y)){
-							if((minigame.Cx == y || minigame.Cx == y+1 || minigame.Cx == y-1) && (minigame.Cy == 7-x || minigame.Cy == 7-x-1 || minigame.Cy == 7-x+1 )){
-								if(minigame.zones[y][x] != 3 && minigame.zones[y][x] != 1) {
-									if((minigame.Cx == y && minigame.Cy != 7 - x) || (minigame.Cx != y && minigame.Cy == 7 - x) || (minigame.Cx != y && minigame.Cy != 7 - x)) {
+							if((minigame.Cx == x || minigame.Cx == x+1 || minigame.Cx == x-1) && (minigame.Cy == (y - 7) * -1 || minigame.Cy == ((y - 7) * -1)+1 || minigame.Cy ==((y - 7) * -1)-1)){
+								if(minigame.zones[x][((y - 7) * -1)] != 3 && minigame.zones[x][((y - 7) * -1)] != 1 && minigame.zones[x][((y - 7) * -1)] != 5) {
+								//	if((minigame.Cx == y && minigame.Cy != x) || (minigame.Cx != y && minigame.Cy == x) || (minigame.Cx != y && minigame.Cy != x)) {
 										if (minigame.Xx != -1) {
 											minigame.zones[minigame.Xx][minigame.Xy] = 0;
 										}
-										minigame.zones[y][7 - x] = 4;
-										minigame.Xx = y;
-										minigame.Xy = 7 - x;
-									}
+										if(minigame.zones[x][((y - 7) * -1)] == 2){
+											minigame.zones[x][((y - 7) * -1)] = 5;
+										}
+										else{
+											minigame.zones[x][((y - 7) * -1)] = 4;
+										}
+										minigame.Xx = x;
+										minigame.Xy = ((y - 7) * -1);
+								//	}
 								}
 							}
 						}
 					}
 				}
 			}
+			/// PREGLEJ ČE JE KONEC IGRE
+			boolean isNotOver = false;
+			for(int x=0; x<8; x++) {
+				for (int y = 0; y < 8; y++) {
+					if(minigame.zones[x][y] == 2 || minigame.zones[x][y] == 5){
+						isNotOver = true;
+					}
+				}
+			}
+			if(!isNotOver){
+				minigame.isActive = false;
+				minigameOn = false;
+				minigame.win = 1;
+				for(int i=0; i<boys.length; i++){
+					if(i+1 == minigame.boyID){
+						boys[i].canDrop = false;
+						boys[i].setSpeed(boys[i].getSpeed() * 2);
+					}
+				}
+				winSound.play();
+			}
+			if(minigame.timer <= 0){
+				minigame.win = -1;
+				minigame.isActive = false;
+				minigameOn = false;
+				for(int i=0; i<boys.length; i++){
+					if(i+1 == minigame.boyID){
+						boys[i].setSpeed(boys[i].getSpeed() * 2);
+					}
+				}
+			}
+
 		}
 
 		if(!gameOn){
@@ -734,24 +872,31 @@ public class Game implements com.badlogic.gdx.Screen {
 				laugh.play();
 				boy.playSound++;
 				boy.isActive = false;
+				numberOfTrash = numberOfTrash + boy.trashDroped;
+				totalTrash += boy.trashDroped;
 			}
 			if (boy.boy.y > (height * 512) - 180 && boy.playSound == 2) { //145
 				laugh.play();
 				boy.playSound++;
 				boy.isActive = false;
+				numberOfTrash = numberOfTrash + boy.trashDroped;
+				totalTrash += boy.trashDroped;
 			}//1815, 233
 			if (boy.boy.x < 65 && boy.playSound == 2) { //55
 				laugh.play();
 				boy.playSound++;
 				boy.isActive = false;
+				numberOfTrash = numberOfTrash + boy.trashDroped;
+				totalTrash += boy.trashDroped;
 			}
 			if (boy.boy.x > (width * 512) - 140 && boy.playSound == 2) { //142
 				laugh.play();
 				boy.playSound++;
 				boy.isActive = false;
+				numberOfTrash = numberOfTrash + boy.trashDroped;
+				totalTrash += boy.trashDroped;
 			}
 	}
-
 
 	private void createTouchPad(){
         touchpadSkin = new Skin();

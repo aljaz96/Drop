@@ -40,6 +40,9 @@ public class Badboy {
         public int positionCounter = 0;
         public int numberOfTrash;
         public int trashDroped = 0;
+        public boolean isBad = false;
+        public boolean wasBlamed = false;
+        public boolean canDrop = true;
 
     public float getSpeed() {
         return speed;
