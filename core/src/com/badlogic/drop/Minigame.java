@@ -25,7 +25,11 @@ public class Minigame {
     public int Cy;
     public int Bx;
     public int By;
+    public int oldBy;
+    public int oldBx;
     public int win = 0;
+    public boolean hasEnded = false;
+    public float minigameEndedTimer = 2f;
 
     public Minigame(int id, int numberOfT, int diff, float mSpeed, float bSpeed){
         boyID = id;

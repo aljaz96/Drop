@@ -22,7 +22,7 @@ public class Badboy {
         public int yEnd;
         public float deltaX;
         public float deltaY;
-        public float speed = 1.35f;
+        public float speed;
         public boolean direction;
         public int directionX = 1;
         public int directionY = 1;

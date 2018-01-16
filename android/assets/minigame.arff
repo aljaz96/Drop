@@ -1,0 +1,31 @@
+@relation 'Neimenovano 1'
+
+@attribute Lvl numeric
+@attribute MySpeed numeric
+@attribute BoySpeed numeric
+@attribute Trees numeric
+@attribute Time numeric
+@attribute ClassValues {uspe?en,neuspe?en}
+
+@data
+6,1.1,1,10,40,uspe?en
+8,1.15,1.35,11,35,uspe?en
+13,1.2,1.4,13,35,uspe?en
+9,1.15,1.4,10,30,uspe?en
+25,1.35,1.35,17,25,uspe?en
+40,1.5,1.85,23,20,neuspe?en
+37,1.45,1.65,20,15,neuspe?en
+22,1.3,1.85,17,25,neuspe?en
+57,1.6,2.3,26,20,neuspe?en
+60,1.65,2.5,25,20,neuspe?en
+6,1.15,1.05,8,30,uspe?en
+100,2,2.3,10,10,neuspe?en
+10,1.15,1,15,25,uspe?en
+20,1.25,1.8,18,20,neuspe?en
+30,1.35,1.1,22,25,uspe?en
+40,1.4,1.8,25,15,neuspe?en
+50,1.5,2.1,23,15,neuspe?en
+60,1.85,1.35,27,20,uspe?en
+70,1.5,1.95,21,20,neuspe?en
+80,1.65,2,25,35,uspe?en
+15,1.35,1.2,12,25,uspe?en

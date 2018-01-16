@@ -21,8 +21,14 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.util.Iterator;
 import java.util.Random;
+
+import weka.core.Instance;
+import weka.core.Instances;
+
 
 public class Game implements com.badlogic.gdx.Screen {
 
@@ -54,6 +60,8 @@ public class Game implements com.badlogic.gdx.Screen {
 	private Texture minigame_tree;
 	private Texture minigame_x;
 	private Texture minigame_checkmate;
+	private Texture escaped;
+	private Texture caught;
     ////////////////VELIKOST//////////////////
 	private int height = 4;
 	private int width = 8;
@@ -155,8 +163,8 @@ public class Game implements com.badlogic.gdx.Screen {
 		//createRegions(ozadje);
 		//height = 3; //rand.nextInt(12-5) + 4;
 		//width = 3; //rand.nextInt(12-5) + 4;
-		height = rand.nextInt(12-5) + 4;
-		width = rand.nextInt(12-5) + 4;
+		height = 6;//rand.nextInt(12-5) + 4;
+		width = 6;//rand.nextInt(12-5) + 4;
 		ozadje = new Ozadje(width,height);
 		CreateCustomRegions(ozadje);
 		/////// ZA OZADJA /////////////////////////////////////
@@ -190,6 +198,8 @@ public class Game implements com.badlogic.gdx.Screen {
 		retry = new Texture(Gdx.files.internal("retry.png"));
 		continuee = new Texture(Gdx.files.internal("continue.png"));
 		standing = new Texture(Gdx.files.internal("hat_man.png"));
+		escaped = new Texture(Gdx.files.internal("escaped.png"));
+		caught = new Texture(Gdx.files.internal("caught.png"));
 		x = new Texture(Gdx.files.internal("x.png"));
 		minigame_screen = new Texture(Gdx.files.internal("minigame.jpg"));
 		minigame_character = new Texture(Gdx.files.internal("minigame_me.png"));
@@ -259,6 +269,8 @@ public class Game implements com.badlogic.gdx.Screen {
 		boys = new Badboy[10];
 		for(int i=0; i<boys.length; i++){
 			boys[i] = new Badboy(height,width);
+			float s = ((float)(130 + all.getLvl() + rand.nextInt(30)) / 100);
+			boys[i].setSpeed(s);
 			boys[i].ID = i + 1;
 			boys[i].startTime = rand.nextInt((int)time - ((int)time / 2)) + ((int)time / 2);
 			boys[i].numberOfTrash = rand.nextInt(4-0) + 0;
@@ -281,6 +293,9 @@ public class Game implements com.badlogic.gdx.Screen {
 		for(int i=0; i<numberOfTrash; i++){
 			spawnTrash();
 		}
+
+		
+
 	}
 
 	//dodaj spreminjajoče kante/inventory/nove smeti/ mogoče drevesa/mogoče ozadaje poštimati
@@ -329,7 +344,7 @@ public class Game implements com.badlogic.gdx.Screen {
 				//if (!boy.isActive) boy.currentImage = new TextureRegion(badboy, 100, 100);
 			}
 		}
-		//litterText = "Litter left: " +   boy.deltaX + "_____"  + boy.deltaY;
+		//litterText = "Litter left: " +    touchpad.getKnobPercentX() + "_____"  +  touchpad.getKnobPercentY();
 		//litterText ="x: " + boys[0].deltaX + "__" +  boys[0].directionX + "__" + boys[0].defaultX + " y:" + boys[0].directionY + "__" + boys[0].defaultY;
 		litterText = "Litter left: " +  numberOfTrash;
 		timerText = "Time left: " + String.format("%d",(long)time);
@@ -441,6 +456,20 @@ public class Game implements com.badlogic.gdx.Screen {
 						if(minigame.zones[i][j] == 5){
 							batch.draw(minigame_checkmate, camera.position.x - minigame.drawPosX + (47 * 1.3f * i), camera.position.y - minigame.drawPosY + (47 * 1.3f * j), minigame_checkmate.getWidth() * 1.3f, minigame_checkmate.getHeight() * 1.3f);
 						}
+					}
+				}
+				if(minigame.hasEnded){
+					minigame.minigameEndedTimer -=  deltaTime;
+					if(minigame.minigameEndedTimer >= 0){
+						if(minigame.win == 1){
+							batch.draw(caught, camera.position.x - caught.getWidth()/2, camera.position.y - caught.getHeight()/2, caught.getWidth(), caught.getHeight());
+						}
+						if(minigame.win == -1){
+							batch.draw(escaped, camera.position. x- escaped.getWidth()/2, camera.position.y - escaped.getHeight()/2, escaped.getWidth(), escaped.getHeight());
+						}
+					}
+					if(minigame.minigameEndedTimer < 0){
+						minigameOn = false;
 					}
 				}
 			}
@@ -620,31 +649,114 @@ public class Game implements com.badlogic.gdx.Screen {
 
 		if(gameOn && !minigameOn){
 			for (Badboy boy: boys) {
-				if(bucket.overlaps(boy.boy) && Gdx.input.justTouched() && minigameOn == false && boy.wasBlamed == false){
-					boy.wasBlamed = true;
-					if(boy.isBad == true) {
-						minigameOn = true;
-						minigame = new Minigame(boy.ID, trees.length, all.getLvl(), all.getSpeed(), boy.speed);
-					}
-					else if(boy.isBad == false){
-						score -= 250;
-						error.play();
-						boy.setSpeed(boy.getSpeed() * 2);
+				if(bucket.overlaps(boy.boy) && Gdx.input.justTouched() && minigameOn == false && boy.wasBlamed == false) {
+					Vector3 tmp = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+					camera.unproject(tmp);
+					Rectangle gamestart=new Rectangle(camera.position.x ,camera.position.y - 400, 800, 800);
+					if (gamestart.contains(tmp.x, tmp.y)) {
+						boy.wasBlamed = true;
+						if (boy.isBad == true) {
+							minigameOn = true;
+							minigame = new Minigame(boy.ID, trees.length, all.getLvl(), all.getSpeed(), boy.speed);
+						} else if (boy.isBad == false) {
+							score -= (150 + 10 * all.getLvl());
+							error.play();
+							boy.setSpeed(boy.getSpeed() * 2);
+						}
 					}
 				}
 			}
 		}
+		/////(///
+		/////////////
+		///////////// MINIGAME /////////////////
 		if(minigameOn && minigame.win == 0){
-			minigame.timer -= deltaTime;
-			minigame.timer = Math.round(minigame.timer * 100);
-			minigame.timer = minigame.timer / 100;
-			minigame.mySpeedTimer -= deltaTime;
-			minigame.mySpeedTimer = Math.round(minigame.mySpeedTimer * 100);
-			minigame.mySpeedTimer = minigame.mySpeedTimer / 100;
-			minigame.boySpeedTimer -= deltaTime;
-			minigame.boySpeedTimer = Math.round(minigame.boySpeedTimer * 100);
-			minigame.boySpeedTimer = minigame.boySpeedTimer / 100;
-			if(minigame.mySpeedTimer <= 0){
+			if(!minigame.hasEnded) {
+				minigame.timer -= deltaTime;
+				minigame.timer = Math.round(minigame.timer * 100);
+				minigame.timer = minigame.timer / 100;
+				minigame.mySpeedTimer -= deltaTime;
+				minigame.mySpeedTimer = Math.round(minigame.mySpeedTimer * 100);
+				minigame.mySpeedTimer = minigame.mySpeedTimer / 100;
+				minigame.boySpeedTimer -= deltaTime;
+				minigame.boySpeedTimer = Math.round(minigame.boySpeedTimer * 100);
+				minigame.boySpeedTimer = minigame.boySpeedTimer / 100;
+			}
+			if(minigame.boySpeedTimer <= 0.05){
+				minigame.oldBx = minigame.Bx;
+				minigame.oldBy = minigame.By;
+				int bestX = -1;
+				int bestY = -1;
+				for(int i=0; i<minigame.dificulty; i++) {
+ 					int newX = -1;
+					int newY = -1;
+					while ((newY < 0 || newY > 7) || (newX < 0 || newX > 7)) {
+						int r = rand.nextInt(8 - 1) + 1;
+						if (r == 1) { //gor
+							newX = minigame.Bx;
+							newY = minigame.By + 1;
+						} else if (r == 2) { //desno gor
+							newX = minigame.Bx + 1;
+							newY = minigame.By + 1;
+						} else if (r == 3) { //desno
+							newX = minigame.Bx + 1;
+							newY = minigame.By;
+						} else if (r == 4) { //desno dol
+							newX = minigame.Bx + 1;
+							newY = minigame.By - 1;
+						} else if (r == 5) { //dol
+							newX = minigame.Bx;
+							newY = minigame.By - 1;
+						} else if (r == 6) { //levo dol
+							newX = minigame.Bx - 1;
+							newY = minigame.By - 1;
+						} else if (r == 7) { //levo
+							newX = minigame.Bx;
+							newY = minigame.By + 1;
+						} else if (r == 8) { //levo gor
+							newX = minigame.Bx - 1;
+							newY = minigame.By + 1;
+						}
+						//if(newX == minigame.oldBx && newY == minigame.oldBy){
+						//	continue;
+						//}
+						if((newX > 7 || newX < 0) || (newY > 7 || newY < 0)){
+							continue;
+						}
+						if(minigame.zones[newX][newY] == 1 || minigame.zones[newX][newY] == 3){
+							continue;
+						}
+						if (bestX == -1 && bestY == -1) {
+							bestX = newX;
+							bestY = newY;
+						}
+						else{
+							double previousDistance = Math.sqrt(((minigame.Cx - bestX)*(minigame.Cx - bestX))+((minigame.Cy - bestY)*(minigame.Cy - bestY)));
+							double newdistance = Math.sqrt(((minigame.Cx - newX)*(minigame.Cx - newX))+((minigame.Cy - newY)*(minigame.Cy - newY)));
+							if(newdistance > previousDistance){
+								bestX = newX;
+								bestY = newY;
+							}
+						}
+					}
+				}
+				if(minigame.zones[minigame.oldBx][minigame.oldBy] == 5){
+					minigame.zones[minigame.oldBx][minigame.oldBy] = 4;
+				}
+				else{
+					minigame.zones[minigame.oldBx][minigame.oldBy] = 0;
+				}
+				if(bestX == -1 || bestY == -1){
+					bestX = minigame.oldBx;
+					bestY = minigame.oldBy;
+				}
+				minigame.zones[bestX][bestY] = 2;
+				minigame.Bx = bestX;
+				minigame.By = bestY;
+				minigame.boySpeedTimer = 2.8f - minigame.boySpeed;
+			}
+
+			if(minigame.mySpeedTimer <= 0 && !minigame.hasEnded){
 				int Xx = 0;
 				int Xy = 0;
 				int myX = 0;
@@ -678,7 +790,7 @@ public class Game implements com.badlogic.gdx.Screen {
 				minigame.zones[minigame.Xx][minigame.Xy] = 4;
 			}
 
-			if(Gdx.input.isTouched() && minigame.win == 0){
+			if(Gdx.input.isTouched() && minigame.win == 0 && !minigame.hasEnded){
 				Vector3 tmp=new Vector3(Gdx.input.getX(),Gdx.input.getY(), 0);
 				for(int x=0; x<8; x++){
 					for(int y=0; y<8; y++){
@@ -705,6 +817,81 @@ public class Game implements com.badlogic.gdx.Screen {
 					}
 				}
 			}
+			if( touchpad.getKnobPercentX() != 0 &&  touchpad.getKnobPercentY() != 0){
+				 int posX = 0;
+				 int posY = 0;
+				 float x =  touchpad.getKnobPercentX();
+				 float y =  touchpad.getKnobPercentY();
+				 boolean doMove = false;
+				 if(x < 0.33f && x > -0.33f && y > 0.2f){
+					 //NARAVNOST GOR
+					 posX = minigame.Cx;
+					 posY = minigame.Cy + 1;
+					 doMove = true;
+				 }
+				 else if(x > 0.33f && x < 0.8f && y > 0.2f){
+					 //DESNO GOR
+					 posX = minigame.Cx + 1;
+					 posY = minigame.Cy + 1;
+					 doMove = true;
+				 }
+				 else if(x < -0.33f && x > -0.8f && y > 0.2f){
+					 //LEVO GOR
+					 posX = minigame.Cx - 1;
+					 posY = minigame.Cy + 1;
+					 doMove = true;
+				 }
+				 else if(x > 0.8f && y < 0.33f && y > -0.33f){
+					 //DESNO
+					 posX = minigame.Cx + 1;
+					 posY = minigame.Cy;
+					 doMove = true;
+				 }
+				 else if(x > 0.33f && x < 0.8f && y < -0.2f){
+					 //DESNO DOL
+					 posX = minigame.Cx + 1;
+					 posY = minigame.Cy - 1;
+					 doMove = true;
+				 }
+				else if(x < 0.33f && x > -0.33f && y < -0.2f){
+					//NARAVNOST DOL
+					posX = minigame.Cx;
+					posY = minigame.Cy - 1;
+					 doMove = true;
+				}
+				else if(x < -0.33f && x > -0.8f && y < -0.2f){
+					//LEVO DOL
+					posX = minigame.Cx - 1;
+					posY = minigame.Cy - 1;
+					 doMove = true;
+				}
+				else if(x < -0.8f && y < 0.33f && y > -0.33f){
+					//LEVO
+					posX = minigame.Cx - 1;
+					posY = minigame.Cy;
+					 doMove = true;
+				}
+				if(posX <= 7 && posX >= 0 && posY <= 7 && posY >= 0 && doMove){
+					if((minigame.Cx == posX || minigame.Cx == posX+1 || minigame.Cx == posX-1) && (minigame.Cy == posY || minigame.Cy == posY+1 || minigame.Cy == posY-1)){
+						if(minigame.zones[posX][posY] != 3 && minigame.zones[posX][posY] != 1 && minigame.zones[posX][posY] != 5) {
+							//	if((minigame.Cx == y && minigame.Cy != x) || (minigame.Cx != y && minigame.Cy == x) || (minigame.Cx != y && minigame.Cy != x)) {
+							if (minigame.Xx != -1) {
+								minigame.zones[minigame.Xx][minigame.Xy] = 0;
+							}
+							if(minigame.zones[posX][posY] == 2){
+								minigame.zones[posX][posY] = 5;
+							}
+							else{
+								minigame.zones[posX][posY] = 4;
+							}
+							minigame.Xx = posX;
+							minigame.Xy = posY;
+							//	}
+						}
+					}
+
+				}
+			}
 			/// PREGLEJ ČE JE KONEC IGRE
 			boolean isNotOver = false;
 			for(int x=0; x<8; x++) {
@@ -714,9 +901,15 @@ public class Game implements com.badlogic.gdx.Screen {
 					}
 				}
 			}
-			if(!isNotOver){
+			//if(isNotOver == true){
+
+				//something
+
+			//}
+			if(!isNotOver && !minigame.hasEnded){
 				minigame.isActive = false;
-				minigameOn = false;
+				//minigameOn = false;
+				minigame.hasEnded = true;
 				minigame.win = 1;
 				for(int i=0; i<boys.length; i++){
 					if(i+1 == minigame.boyID){
@@ -724,14 +917,18 @@ public class Game implements com.badlogic.gdx.Screen {
 						boys[i].setSpeed(boys[i].getSpeed() * 2);
 					}
 				}
+				score = score + 250 + 10 * minigame.dificulty;
+				totalScore = score +  250 + 10 * minigame.dificulty;
 				winSound.play();
 			}
-			if(minigame.timer <= 0){
+			if(minigame.timer <= 0) {
 				minigame.win = -1;
 				minigame.isActive = false;
-				minigameOn = false;
-				for(int i=0; i<boys.length; i++){
-					if(i+1 == minigame.boyID){
+				//minigameOn = false;
+				error.play();
+				minigame.hasEnded = true;
+				for (int i = 0; i < boys.length; i++) {
+					if (i + 1 == minigame.boyID) {
 						boys[i].setSpeed(boys[i].getSpeed() * 2);
 					}
 				}
