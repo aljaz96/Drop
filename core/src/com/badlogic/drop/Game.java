@@ -23,7 +23,11 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 
 import weka.core.Instance;
@@ -223,6 +227,8 @@ public class Game implements com.badlogic.gdx.Screen {
 		music.setLooping(true);
 		music.play();
 
+
+
       //... more to come ...
 		camera = new OrthographicCamera();
 		camera.setToOrtho(false, 800, 480);
@@ -294,7 +300,6 @@ public class Game implements com.badlogic.gdx.Screen {
 			spawnTrash();
 		}
 
-		
 
 	}
 
@@ -657,8 +662,12 @@ public class Game implements com.badlogic.gdx.Screen {
 						boy.wasBlamed = true;
 						if (boy.isBad == true) {
 							minigameOn = true;
+							List<arffMinigameInstance> arffList = new ArrayList<arffMinigameInstance>();
+							readArff(arffList);
 							minigame = new Minigame(boy.ID, trees.length, all.getLvl(), all.getSpeed(), boy.speed);
-						} else if (boy.isBad == false) {
+							compareArffWithList(arffList);
+						}
+						else if (boy.isBad == false) {
 							score -= (150 + 10 * all.getLvl());
 							error.play();
 							boy.setSpeed(boy.getSpeed() * 2);
@@ -920,12 +929,14 @@ public class Game implements com.badlogic.gdx.Screen {
 				score = score + 250 + 10 * minigame.dificulty;
 				totalScore = score +  250 + 10 * minigame.dificulty;
 				winSound.play();
+				writeTOArff("uspesen");
 			}
 			if(minigame.timer <= 0) {
 				minigame.win = -1;
 				minigame.isActive = false;
 				//minigameOn = false;
 				error.play();
+				writeTOArff("neuspesen");
 				minigame.hasEnded = true;
 				for (int i = 0; i < boys.length; i++) {
 					if (i + 1 == minigame.boyID) {
@@ -1043,6 +1054,87 @@ public class Game implements com.badlogic.gdx.Screen {
 		timerFont.dispose();
 		touchpadSkin.dispose();
 		stage.dispose();
+	}
+
+	private void compareArffWithList(List<arffMinigameInstance> list){
+		int numberOfSimilarSucceses = 0;
+		int numberOfSimilarFails = 0;
+		int numberOfInstances = 0;
+		int add = 0;
+		for(int i=0; i<list.size(); i++){
+			add = 0;
+			if(list.get(i).getLvl() + 5 >= minigame.dificulty && minigame.dificulty >= list.get(i).getLvl() - 5){
+				add++;
+			}
+			if(list.get(i).getTime() == minigame.overAllTimer){
+				add++;
+			}
+			if(list.get(i).getMySpeed() + 0.10f >= minigame.mySpeed && minigame.mySpeed >= list.get(i).getMySpeed() - 0.10f){
+				add++;
+			}
+			if(list.get(i).getBoySpeed() + 0.20f >= minigame.boySpeed && minigame.boySpeed >= list.get(i).getBoySpeed() - 0.20f){
+				add++;
+			}
+			if(add == 4){
+				numberOfInstances++;
+				if(list.get(i).getVal().equals("uspesen")){
+					numberOfSimilarSucceses++;
+				}
+				if(list.get(i).getVal().equals("neuspesen")){
+					numberOfSimilarFails++;
+				}
+			}
+		}
+		int ratio = numberOfInstances / 3;
+		if(numberOfInstances >= 10){
+			if(numberOfSimilarSucceses > numberOfSimilarFails + ratio){
+				minigame.boySpeed = minigame.boySpeed + 0.20f;
+				minigame.timer -= 10;
+				minigame.numberOfTrees += 5;
+			}
+			if(numberOfSimilarFails > numberOfSimilarSucceses + ratio){
+				minigame.boySpeed = minigame.boySpeed - 0.10f;
+				minigame.timer += 10;
+			}
+		}
+	}
+
+	private void readArff(List<arffMinigameInstance> list){
+		try {
+			String path = Gdx.files.internal("minigame.arff").path();
+			BufferedReader reader = new BufferedReader(new FileReader(path));
+			Instances data = new Instances(reader);
+			reader.close();
+			// setting class attribute
+			data.setClassIndex(data.numAttributes() - 1);
+			for(int i = 0; i<data.numInstances(); i++){
+				arffMinigameInstance mini = new arffMinigameInstance();
+				Instance inst = data.get(i);
+				mini.setLvl((int)inst.value(0));
+				mini.setMySpeed((float)inst.value(1));
+				mini.setBoySpeed((float)inst.value(2));
+				mini.setNumberOfTrees((int)inst.value(3));
+				mini.setTime((int)inst.value(4));
+				mini.setVal(inst.stringValue(5));
+				list.add(mini);
+			}
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private void writeTOArff(String s){
+		try{
+			String path = Gdx.files.internal("minigame.arff").path();
+			FileWriter fwriter = new FileWriter(path,true); //true will append the new instance
+			String newInst = minigame.dificulty + "," + minigame.mySpeed + "," + minigame.boySpeed + "," + minigame.numberOfTrees + "," + (int)minigame.overAllTimer + "," + s;
+			fwriter.write(newInst + "\n");//appends the string to the file
+			fwriter.close();
+		}
+		catch(IOException e){
+			e.printStackTrace();
+		}
 	}
 
 	private void spawnTrash() {

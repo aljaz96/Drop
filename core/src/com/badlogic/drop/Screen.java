@@ -22,7 +22,8 @@ public class Screen extends Game {
         batchOptions = new SpriteBatch();
         //Use LibGDX's default Arial font.
         font = new BitmapFont();
-        this.setScreen(new MainMenuScreen(this));
+        //this.setScreen(new MainMenuScreen(this));
+        this.setScreen(new animationScreen(this));
     }
 
     public void render() {

@@ -7,4 +7,6 @@ eclipse.project {
 }
 dependencies {
     compile files('build/libs/wekaSTRIPPED.jar')
+    compile files('build/libs/indiespot-media-0.8.09.jar')
+    compile 'com.google.gwt:gwt-user:2.8.0'
 }

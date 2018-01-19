@@ -1,6 +1,7 @@
 package com.badlogic.drop.desktop;
 
 import com.badlogic.drop.Screen;
+import com.badlogic.drop.animationScreen;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
 

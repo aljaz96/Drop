@@ -12,6 +12,7 @@ public class Minigame {
     public int boyID;
     public boolean isActive;
     public float timer = 40;
+    public float overAllTimer = 40;
     public int numberOfTrees;
     public int dificulty;
     public float mySpeed;
